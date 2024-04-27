@@ -35,7 +35,7 @@ int main(void){
     fclose(fopen(fname, "w"));
 
     uint32_t crcTable[CRC_TABLE_SIZE];
-    uint32_t polynomial = 0x1F1922815;
+    uint32_t polynomial = 0xF1922815;
 
     generate_crc32_table(crcTable, polynomial);
     print_CRC32_table(crcTable);

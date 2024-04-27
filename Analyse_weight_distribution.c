@@ -35,13 +35,13 @@ void increment_dataword(uint8_t *dataword, size_t size) {
     }
 }
 
-bool is_dataword_full(uint8_t *dataword, size_t size) {   
+uint8_t is_dataword_full(uint8_t *dataword, size_t size) {   
     for (int i = 0; i < size; i++) {
         if (dataword[i] != 0xFF) {
-            return false;
+            return 0;
         }
     }
-    return true;
+    return 1;
 }
 
 void get_weight_distribution(uint64_t weight_distribution[CODEWORD_LENGTH], uint32_t crcTable[CRC_TABLE_SIZE]){
@@ -66,7 +66,7 @@ void get_weight_distribution(uint64_t weight_distribution[CODEWORD_LENGTH], uint
     // 10000000
     //for (uint64_t i = 0; i < permutaion; i++) {
     uint64_t i = 0;
-    while (is_dataword_full(dataword, sizeof(dataword))) {
+    while (is_dataword_full(dataword, sizeof(dataword)) != 1) {
         crc = crc32(crcTable, dataword, sizeof(dataword));
         //printf("CRC32 value: 0x%08X\n", crc);
         //codeword = ((uint64_t)dataword << CRC_LENGTH) | crc;

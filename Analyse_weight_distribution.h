@@ -12,7 +12,7 @@
 #include "CRC32_LUT_generator.h"
 
 #define DATAWORD_LENGTH 32
-#define DATAWORD_ARRAY 8  // DATAWORD_LENGTH /8
+#define DATAWORD_ARRAY 4  // DATAWORD_LENGTH /8
 #define CODEWORD_LENGTH (DATAWORD_LENGTH + CRC_LENGTH)
 
 // get single weight of a codeword

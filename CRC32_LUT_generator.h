@@ -10,8 +10,6 @@
 #define CRC_TABLE_SIZE 256
 
 
-// Reflects Input
-uint8_t reflect_bits(uint8_t byte);
 
 // Reflects the lower bits of a value.
 uint32_t reflect(uint32_t val, int num_bits);
@@ -23,7 +21,7 @@ void generate_crc32_table(uint32_t crcTable[CRC_TABLE_SIZE], uint32_t polynomial
 void print_CRC32_table(uint32_t crcTable[CRC_TABLE_SIZE]); 
 
 // return crc32 value based on the crcTable
-uint32_t crc32(uint32_t crcTable[CRC_TABLE_SIZE], const void *buf, size_t size);
+uint32_t crc32(uint32_t crcTable[CRC_TABLE_SIZE], uint8_t *buf, size_t size);
 
 //=======================================================
 // Unit tests

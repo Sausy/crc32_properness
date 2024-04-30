@@ -1,7 +1,8 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\test"
   ],
-  "SelectedNode": "\\main.c",
+  "SelectedNode": "\\test\\crc_desired.py",
   "PreviewInSolutionExplorer": false
 }

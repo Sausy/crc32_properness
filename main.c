@@ -28,9 +28,6 @@ long double buffer_calc(long double Pe, int32_t n, int32_t i, uint64_t Ai){
 
 int main(void){
     // run all tests
-    test_all_crc();
-
-    return 0; 
 
     // to store data to a file
     char *fname = "weight.data";
@@ -43,7 +40,6 @@ int main(void){
     generate_crc32_table(crcTable, polynomial);
     print_CRC32_table(crcTable);
 
-    /*
 
     uint64_t weight_distribution[CODEWORD_LENGTH] = {0};
     get_weight_distribution(weight_distribution, crcTable);
@@ -76,7 +72,6 @@ int main(void){
 
     printf("Rcrc: %e\n", (double)Rcrc);
     printf("Rcrc: %G\n", (double)Rcrc);
-    */
 
     return 0;
 }

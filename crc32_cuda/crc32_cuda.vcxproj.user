@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup />
+  <ItemGroup>
+    <CudaCompile Include="main.cu" />
+    <CudaCompile Include="sha512.cu">
+      <Filter>sha-512</Filter>
+    </CudaCompile>
+    <CudaCompile Include="tests.cu">
+      <Filter>tests</Filter>
+    </CudaCompile>
+    <CudaCompile Include="crc32.cu">
+      <Filter>crc32</Filter>
+    </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="sha-512">
+      <UniqueIdentifier>{991bfdf8-6a7e-4adb-9a9a-9b954238f8cb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="crc32">
+      <UniqueIdentifier>{4fa282ca-a044-48ec-b30c-9dc7719b85ef}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="tests">
+      <UniqueIdentifier>{face201f-0818-4ec3-af43-eea18d7807d4}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="sha512.cuh">
+      <Filter>sha-512</Filter>
+    </ClInclude>
+    <ClInclude Include="tests.cuh">
+      <Filter>tests</Filter>
+    </ClInclude>
+    <ClInclude Include="crc32.cuh">
+      <Filter>crc32</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
+  </ItemGroup>
+</Project>

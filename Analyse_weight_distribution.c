@@ -1,28 +1,32 @@
 #include "Analyse_weight_distribution.h"
 
+
+uint32_t sum_single_byte(uint8_t byte) {
+    uint32_t sum = 0;
+    for (int i = 0; i < 8; i++) {
+        sum += (uint32_t)(byte & 0x00000001);
+        byte >>= 1;
+    }
+    return sum;
+}
+
 // get single weight of a codeword
 // also known as hamming weight
-uint32_t get_hamming_weight(const void *codew, size_t length,  uint32_t crc) {
-    uint32_t weight = 0;
-    //uint16_t lenght_frame = length + 32;
-    const uint8_t *p = codew;
+uint32_t get_hamming_weight(uint8_t *dataword, size_t size, uint32_t crc) {
+    uint32_t count = 0;
 
-    uint8_t bit_buffer; 
-    for (size_t j = 0; j < length; j++) {
-        bit_buffer = *p++;
-
-        for (int i = 0; i < 8; i++) {
-            weight += (bit_buffer & 0x01);
-            bit_buffer = bit_buffer >> 1;
-        }
-    }
-
-    for (int i = 0; i < 32; i++) {
-        weight += (crc & 0x01);
+    //get sum of crc32
+    for (uint32_t i = 0; i < 32; i++) {
+        count += (uint32_t)(crc & 0x00000001);
         crc = crc >> 1;
     }
-    
-    return weight;
+
+    //get sum of dataword
+    while(size--){
+        count += sum_single_byte(*dataword++);
+    }
+
+    return count;
 }
 
 // Function to increment a big-endian data word
@@ -35,8 +39,8 @@ void increment_dataword(uint8_t *dataword, size_t size) {
     }
 }
 
-uint8_t is_dataword_full(uint8_t *dataword, size_t size) {   
-    for (int i = 0; i < size; i++) {
+uint8_t is_dataword_full(uint8_t *dataword, size_t size) {
+    for (size_t i = 0; i < size; i++) {
         if (dataword[i] != 0xFF) {
             return 0;
         }
@@ -94,4 +98,5 @@ void get_weight_distribution(uint64_t weight_distribution[CODEWORD_LENGTH], uint
     clock_t end = clock();
     double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
     printf("[INFO]: %ld Time to calculate weight distribution: %f \n", end, time_spent);
-}
+
+    }

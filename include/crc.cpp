@@ -2,6 +2,32 @@
 #include <iostream>
 
 /**
+ * Constructor to initialize the CRC object.
+ * 
+ * @param type The type of CRC (e.g., 8, 16, 32 bits).
+ * @param polynomial The polynomial used for CRC calculations, specified as a hex value.
+ * @param initial The initial value for CRC calculations.
+ * @param reflected Whether the input data is reflected.
+ * @param resultReflected Whether the result is reflected.
+ * @param finalXOR Whether to XOR the final result with 0xFFFFFFFF.
+ * 
+ * 
+ */
+CRC::CRC(int type,uint32_t polynomial, uint32_t initial, bool reflected, bool resultReflected, bool finalXOR){
+
+    this->type = type;
+    this->polynomial = polynomial;
+    this->initial = initial;
+    this->reflected = reflected;
+    this->resultReflected = resultReflected;
+    this->finalXOR = finalXOR;
+    this->LUT = createLUT(polynomial, type, reflected);
+    this->G = generatorMatrix(polynomial, 32 - __builtin_clz(polynomial) - 1, type - 32 + __builtin_clz(polynomial) + 1);
+    this->systematicG = SystematicGeneratorMatrix(polynomial, 32 - __builtin_clz(polynomial) - 1, type - 32 + __builtin_clz(polynomial) + 1);
+    this->H = generateParityCheckMatrix(polynomial, 32 - __builtin_clz(polynomial) - 1, type - 32 + __builtin_clz(polynomial) + 1); 
+}
+
+/**
  * Creates a lookup table (LUT) for calculating CRC using a specified polynomial.
  * 
  * @param polynomial The polynomial used in the CRC calculation, specified as a hex value.
@@ -139,6 +165,114 @@ uint32_t CRC::computeCRC(const std::vector<uint32_t> &lut, const std::vector<uin
 
     return crc;
 }
+// Function to multiply matrices
+std::vector<uint8_t> multiply(const std::vector<std::vector<uint8_t>> &G, const std::vector<uint8_t> &vec)
+{
+    std::vector<uint8_t> result(G.size(), 0);
+    for (size_t i = 0; i < G.size(); ++i)
+    {
+        for (size_t j = 0; j < vec.size(); ++j)
+        {
+            result[i] ^= (G[i][j] & vec[j]);
+        }
+    }
+    return result;
+}
+
+// Function to check if vector is zero
+bool isZero(const std::vector<uint8_t> &vec)
+{
+    for (int v : vec)
+    {
+        if (v != 0)
+            return false;
+    }
+    return true;
+}
+
+/**
+ * Generates the generator matrix for a given CRC polynomial and dataword length.
+ *
+ * @param polynomial The polynomial used in the CRC calculation, specified as a hex value.
+ * @param k The length of the dataword.
+ * @return A matrix (vector of vectors) representing the generator matrix of size [k, n] where n = k + r.
+ *
+ * Mathematical Background:
+ * - The generator matrix G in coding theory is used to generate the codewords from the datawords.
+ * - The matrix is structured such that multiplying it by a dataword vector (in binary) will result in a codeword vector.
+ * - The rows of G represent the coefficients of the polynomial that multiplies the data bits to form the codeword.
+ * - For CRC, the generator matrix is constructed by appending the identity matrix of size k and the matrix representation of the polynomial.
+ *
+ * Example
+ * The results are following 4×7 generator matrix:
+
+        d1	d2	d3	d4  p1	p2	p3
+
+        1	0	0	0   0	1	1
+G = 	0	1	0	0   1	0	1	  = [ I_k | -A^T  ]
+        0	0	1	0   1	1	0
+        0	0	0	1   1	1	1
+ *
+ * Implementation Details:
+ * - This function constructs the matrix by appending the identity matrix I_k to a matrix representation of the CRC polynomial shifted to align with the CRC bits.
+ */
+std::vector<std::vector<uint8_t>> CRC::SystematicGeneratorMatrix(uint32_t polynomial, int r, int k)
+{
+    // int r = 32 - __builtin_clz(polynomial) - 1; // Assuming polynomial is non-zero, compute r as the degree of the polynomial.
+    // int n = k + r; // Codeword length.
+    //std::vector<std::vector<uint8_t>> G(k, std::vector<uint8_t>(n, 0));
+    auto G = generatorMatrix(polynomial, r, k);
+ 
+    int rows = G.size();
+    int cols = G[0].size();
+
+    for (int r = 0, lead = 0; r < rows && lead < cols; ++r, ++lead)
+    {
+        int i = r;
+        while (G[i][lead] == 0)
+        {
+            ++i;
+            if (i == rows)
+            {
+                i = r;
+                ++lead;
+                if (lead == cols)
+                    return G;
+            }
+        }
+
+        std::swap(G[i], G[r]);
+
+        for (i = 0; i < rows; ++i)
+        {
+            if (i != r && G[i][lead])
+            {
+                for (int j = 0; j < cols; ++j)
+                {
+                    G[i][j] ^= G[r][j];
+                }
+            }
+        }
+    }
+
+
+    /*
+    Example for (7,4) 
+    P.s.: since r=3 this means x^2 is the highest degree of the polynomial
+    g(x) = 1+x+x3 
+
+    xi      g(x)qi(x)           di(x)   xi+di(x)  
+    --------------------------------------
+    x3      (1+x+x3)·1          1+x     1+x+x3 
+    x4      (1+x+x3)·x          x+x2    x+x2+x4 
+    x5      (1+x+x3)·(1+x2)     1+x+x2  1+x+x2+x5 
+    x6      (1+x+x3)·(1+x+x3)   1+x2    1+x2+x6 
+    */
+
+
+    return G;
+}
+
 
 /**
  * Generates the generator matrix for a given CRC polynomial and dataword length.
@@ -156,29 +290,24 @@ uint32_t CRC::computeCRC(const std::vector<uint32_t> &lut, const std::vector<uin
  * Implementation Details: 
  * - This function constructs the matrix by appending the identity matrix I_k to a matrix representation of the CRC polynomial shifted to align with the CRC bits.
  */
-std::vector<std::vector<uint8_t>> CRC::generatorMatrix(uint32_t polynomial, int k)
+std::vector<std::vector<uint8_t>> CRC::generatorMatrix(uint32_t polynomial, int r, int k)
 {
-    int r = 32 - __builtin_clz(polynomial) - 1; // Assuming polynomial is non-zero, compute r as the degree of the polynomial.
+    //int r = 32 - __builtin_clz(polynomial) - 1; // Assuming polynomial is non-zero, compute r as the degree of the polynomial.
     int n = k + r;                              // Codeword length.
     std::vector<std::vector<uint8_t>> G(k, std::vector<uint8_t>(n, 0));
 
-    // Constructing the identity part I_k of the matrix.
-    for (int i = 0; i < k; ++i)
-    {
-        G[i][i] = 1;
-    }
+    uint32_t polynomial_buffer; 
 
-    // Adding the CRC polynomial shifted to the rightmost r bits of the codeword.
-    for (int i = 0; i < k; ++i)
-    {
-        uint32_t mask = 1 << r;
-        for (int j = 0; j < r; ++j)
-        {
-            G[i][k + j] = (polynomial & mask) ? 1 : 0;
-            mask >>= 1;
+    for (int row_cnt = 0; row_cnt < k; row_cnt++){
+        polynomial_buffer = polynomial;
+        for(int poly_cnt = 0; poly_cnt <= r; poly_cnt++){
+            if(polynomial_buffer & 1)
+                G[row_cnt][poly_cnt + row_cnt] = 1;
+
+            polynomial_buffer >>= 1;
         }
     }
-
+    
     return G;
 }
 
@@ -193,32 +322,52 @@ std::vector<std::vector<uint8_t>> CRC::generatorMatrix(uint32_t polynomial, int 
  * - The parity check matrix H is used to detect errors in codewords. In coding theory, it's structured such that H * c^T = 0 for a valid codeword c.
  * - For CRC-based systems, the matrix reflects the shift and structure imposed by the CRC polynomial on the codeword bits.
  *
+ * Example:
+ *  for polynom 0xB for CRC4, the parity check matrix is:
+ *  $$h(x) = (1+x^2+x3)(1+x) = 1+x+x^2+x^4$$
+ *
  * Implementation Details:
  * - This matrix is complementary to the generator matrix and ensures that valid codewords result in a zero vector when multiplied by this matrix.
  * - The structure typically involves placing the polynomial coefficients in the rightmost part of the matrix and filling the rest with the identity matrix.
  */
-std::vector<std::vector<uint8_t>> CRC::generateParityCheckMatrix(uint32_t polynomial, int k)
+std::vector<std::vector<uint8_t>> CRC::generateParityCheckMatrix(uint32_t polynomial, int r, int k)
 {
-    int r = 32 - __builtin_clz(polynomial) - 1; // Compute r as before.
+    //int r = 32 - __builtin_clz(polynomial) - 1; // Compute r as before.
     int n = k + r;
+
     std::vector<std::vector<uint8_t>> H(r, std::vector<uint8_t>(n, 0));
 
-    // Constructing the identity part for the CRC bits.
-    for (int i = 0; i < r; ++i)
-    {
-        H[i][k + i] = 1;
-    }
+    auto G = SystematicGeneratorMatrix(polynomial, r, k);
 
-    // Adding the CRC polynomial coefficients to the matrix.
-    uint32_t mask = 1 << (r - 1);
-    for (int j = 0; j < r; ++j)
-    {
-        for (int i = 0; i < k; ++i)
-        {
-            H[j][i] = (polynomial & mask) ? 1 : 0;
-        }
-        mask >>= 1;
-    }
+    // Seperate the identity matrix from the generator matrix
+    // for simplicity we generate the identity matrix
+    std::vector<std::vector<uint8_t>> I_k(k, std::vector<uint8_t>(k, 0));
+    // Set the diagonal to be 1s
+    for (auto t = 0; t < k; t++)
+        I_k[t][t] = 1;
+
+    // Remove the Identiy matrix from G and write it to Matrix P
+    std::vector<std::vector<uint8_t>> P(k, std::vector<uint8_t>(n - k, 0));
+    for (auto row = 0; row < k; row++)
+        for (auto col = 0; col < (n - k); col++)
+            P[row][col] = G[row][col + k];
+
+    // Transpose P
+    std::vector<std::vector<uint8_t>> P_T(n - k, std::vector<uint8_t>(k, 0));
+    for (auto row = 0; row < k; row++)
+        for (auto col = 0; col < (n - k); col++)
+            P_T[col][row] = P[row][col];
+
+    // Create the parity check matrix H
+    // H = [P_T | I_k]
+    for (auto row = 0; row < r; row++)
+        for (auto col = 0; col < n - k; col++)
+            H[row][col] = P_T[row][col];
+
+    for (auto row = 0; row < r; row++)    
+        for (auto col = n - k; col < n; col++)
+            H[row][col] = I_k[row][col - (n - k)];
+
 
     return H;
 }
@@ -235,7 +384,7 @@ std::vector<std::vector<uint8_t>> CRC::generateParityCheckMatrix(uint32_t polyno
  */
 void printLUT(const std::vector<uint32_t> &lut, int columns)
 {
-    int columnWidth = 10; // Adjust as needed for alignment
+    //int columnWidth = 10; // Adjust as needed for alignment
     std::cout << "Lookup Table:" << std::endl;
     for (size_t i = 0; i < lut.size(); ++i)
     {
@@ -248,3 +397,5 @@ void printLUT(const std::vector<uint32_t> &lut, int columns)
     if (lut.size() % columns != 0) // Ensure there's a newline if the last row isn't full
         std::cout << std::endl;
 }
+
+

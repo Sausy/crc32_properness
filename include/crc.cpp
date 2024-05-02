@@ -185,6 +185,21 @@ uint32_t CRC::computeCRC(const std::vector<uint32_t> &lut, const std::vector<uin
 
     return crc;
 }
+
+/**
+ * @brief Computes the CRC value for a given set of data using the specified lookup table (LUT).
+ * 
+ * @param data The data for which the CRC is to be computed, given as a vector of bytes.
+ * @return The computed CRC value as a 32-bit unsigned integer.
+ * 
+ * This function is an overload of the static computeCRC function, using the object's parameters.
+ * 
+ */
+uint32_t CRC::computeCRC(const std::vector<uint8_t> &data){
+    return computeCRC(this->LUT, data, this->type, this->initial, this->reflected, this->resultReflected, this->finalXOR);
+}
+
+/*
 // Function to multiply matrices
 std::vector<uint8_t> multiply(const std::vector<std::vector<uint8_t>> &G, const std::vector<uint8_t> &vec)
 {
@@ -209,6 +224,7 @@ bool isZero(const std::vector<uint8_t> &vec)
     }
     return true;
 }
+*/
 
 /**
  * Generates the generator matrix for a given CRC polynomial and dataword length.

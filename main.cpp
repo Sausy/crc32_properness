@@ -19,11 +19,45 @@ class test{
         uint32_t hamming_distance(std::vector<uint8_t> &v1, std::vector<uint8_t> &v2);
         uint32_t hamming_weight(std::vector<uint8_t> &v);
 
-
+        // calculate the weight distribution of a codeword
+        void weight_distribution_direct();
 
         CRC *c;
         std::string test_file;
 };
+
+/**
+ * @brief  Calculate the weight distribution of a codeword
+ * 
+ */
+void test::weight_distribution_direct(){
+    std::cout << "[INFO] Calculating weight distribution...direct approach" << std::endl;
+
+    // data vector size of kBits
+    std::vector<uint8_t> data(this->c->kBits, 0);
+
+    std::vector<uint32_t> weight_distribution(this->c->nBits, 0);
+
+    for (auto it = 0; it < 2^this->c->kBits; it++){
+        // calculate the CRC
+        uint32_t crc = this->c->computeCRC(data);
+
+        // combine data and crc
+        std::vector<uint8_t> codeword;
+        codeword.insert(codeword.end(), data.begin(), data.end());
+        // print codeword as hex string 
+        std::cout << "Codeword: " << std::hex << std::accumulate(codeword.begin(), codeword.end(), 0) << std::endl;
+
+        // calculate the weight of the codeword
+        uint32_t weight = this->hamming_weight(codeword);
+
+        // weight distribution
+        weight_distribution[weight] += 1;
+
+        // increment the data vector
+
+    }
+}
 
 /**
  * @brief  Calculate the hamming weight of a vector
@@ -94,10 +128,13 @@ int main() {
     std::cout << "Brootforce codeword weight" << std::endl;
 
     // CRC 16 test
-    t.push_back(test(new CRC(16, 32, 0x8005), "direct_parityMatrix"));
+    //t.push_back(test(new CRC(16, 32, 0x8005), "direct_parityMatrix"));
 
     // CRC32 test
-    t.push_back(test(new CRC(32, 64, 0xF1922815), "direct"));
+    //t.push_back(test(new CRC(32, 64, 0xF1922815), "direct"));
+
+    // CRC4 test
+    t.push_back(test(new CRC(4, 7, 0xB), "direct"));
 
     // start running tests
     std::cout << "\nAmount of tests: "<< t.size() << std::endl;

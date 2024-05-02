@@ -34,6 +34,8 @@ public:
                                int type = 32, //defines if 8bit, 16bit or 32bit CRC
                                uint32_t initial = 0xFFFFFFFF, bool inputReflected = false,
                                bool resultReflected = false, bool finalXOR = true);
+    // overload function to compute CRC for pre defined object
+    uint32_t computeCRC(const std::vector<uint8_t> &data);
 
     // Generates the generator matrix for CRC codes.
     static std::vector<std::vector<uint8_t>> generatorMatrix(uint32_t polynomial, int r, int k);

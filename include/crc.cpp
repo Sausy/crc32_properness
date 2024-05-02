@@ -13,7 +13,16 @@
  * 
  * 
  */
-CRC::CRC(int type,uint32_t polynomial, uint32_t initial, bool reflected, bool resultReflected, bool finalXOR){
+CRC::CRC(int type, int n, uint32_t polynomial, uint32_t initial, bool reflected, bool resultReflected, bool finalXOR){
+    
+    std::cout<<"\n[INFO] CRC object created. " << std::endl;
+    std::cout<<"[INFO] CRC type: " << type << std::endl;
+    std::cout<<"[INFO] CRC polynomial: " << polynomial << std::endl;
+    std::cout<<"[INFO] CRC initial: " << initial << std::endl;
+    std::cout<<"[INFO] CRC reflected: " << reflected << std::endl;
+    std::cout<<"[INFO] CRC result reflected: " << resultReflected << std::endl;
+    std::cout<<"[INFO] CRC final XOR: " << finalXOR << std::endl;
+
 
     this->type = type;
     this->polynomial = polynomial;
@@ -21,10 +30,21 @@ CRC::CRC(int type,uint32_t polynomial, uint32_t initial, bool reflected, bool re
     this->reflected = reflected;
     this->resultReflected = resultReflected;
     this->finalXOR = finalXOR;
+
+    if (type != 8 && type != 16 && type != 32)
+        throw std::invalid_argument("Invalid CRC type specified. Allowed values are 8, 16, or 32.");
+    
+    this->rBits = type;
+    this->nBits = n;
+    this->kBits = n - type;
+
+    if (this->kBits < 0)
+        throw std::invalid_argument("Invalid k must be > 0");
+
     this->LUT = createLUT(polynomial, type, reflected);
-    this->G = generatorMatrix(polynomial, 32 - __builtin_clz(polynomial) - 1, type - 32 + __builtin_clz(polynomial) + 1);
-    this->systematicG = SystematicGeneratorMatrix(polynomial, 32 - __builtin_clz(polynomial) - 1, type - 32 + __builtin_clz(polynomial) + 1);
-    this->H = generateParityCheckMatrix(polynomial, 32 - __builtin_clz(polynomial) - 1, type - 32 + __builtin_clz(polynomial) + 1); 
+    this->G = generatorMatrix(polynomial, this->rBits, this->kBits);
+    this->systematicG = SystematicGeneratorMatrix(polynomial, this->rBits, this->kBits);
+    this->H = generateParityCheckMatrix(polynomial, this->rBits, this->kBits); 
 }
 
 /**

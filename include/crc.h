@@ -7,7 +7,7 @@ class CRC
 {
 public:
     // constructor
-    CRC(int type = 32, uint32_t polynomial = 0xF1922815, uint32_t initial = 0xFFFFFFFF, bool reflected = true, bool resultReflected = true, bool finalXOR = true);
+    CRC(int type = 32, int n = 64, uint32_t polynomial = 0xF1922815, uint32_t initial = 0xFFFFFFFF, bool reflected = true, bool resultReflected = true, bool finalXOR = true);
 
     // defining parameters
     uint32_t polynomial;       // Polynomial used for CRC calculations
@@ -16,6 +16,10 @@ public:
     bool resultReflected;      // Whether the result is reflected
     bool finalXOR;             // Whether to XOR the final result with 0xFFFFFFFF
     uint32_t initial;          // Initial value for CRC calculations
+    int rBits;                 // Number of bits for the CRC
+    int kBits;                 // Number of bits for the data
+    int nBits;                 // Total number of bits (CRC + data)
+
 
     std::vector<uint32_t> LUT; // Lookup table for CRC calculations
     std::vector<std::vector<uint8_t>> G; // Generator matrix for CRC codes

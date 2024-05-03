@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <sstream>
 #include <numeric>
+#include <bitset>
 
 #include "./include/crc.h"
 
@@ -33,8 +34,9 @@ class test{
 void test::weight_distribution_direct(){
     std::cout << "[INFO] Calculating weight distribution...direct approach" << std::endl;
 
+    const auto const_kBits = this->c->kBits;
     // data vector size of kBits
-    std::vector<uint8_t> data(this->c->kBits, 0);
+    std::vector<bool> data(this->c->kBits, 0);
 
     std::vector<uint32_t> weight_distribution(this->c->nBits, 0);
 

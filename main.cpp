@@ -82,6 +82,9 @@ test::test(CRC *c, std::string comment, std::string data_path)
 
     this->test_file += "0x" + std::string(hexString) + "_";
 
+    sprintf(hexString, "%x", c->initial);
+    this->test_file += "0x" + std::string(hexString) + "_";
+
     // if comment is part of select_brootforce_method
     if (method_dict.find(comment) != method_dict.end()){
         this->test_file += comment;
@@ -204,7 +207,7 @@ void test::weight_distribution_directParityMatrix(){
 
         // For debugging purposes
         // tracing a chunk shall reflect the time left 
-        if(it % chunk_size == 0){
+        if(it % chunk_size == 0 && it != 0){
             t2 = std::chrono::high_resolution_clock::now();
             chunk_duration = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
             double chunks_left = (subsets - it) / chunk_size;
@@ -259,8 +262,6 @@ void test::weight_distribution_direct()
         return;
     }
 
-    
-
     // data vector size of k-Bits/8
     std::vector<uint8_t> data((uint32_t)this->c->kBits/8, 0);
     // the weight distribution must be n+1 because weight 0 reflects 
@@ -281,7 +282,7 @@ void test::weight_distribution_direct()
     uint64_t chunk_size = 1000000;
 
     for (uint64_t it = 0; it < total; it++)
-    {
+    {   
         // calculate the CRC
         crc = this->c->computeCRC(data);
 
@@ -316,7 +317,7 @@ void test::weight_distribution_direct()
 
         // For debugging purposes
         // tracing a chunk shall reflect the time left 
-        if(it % chunk_size == 0){
+        if(it % chunk_size == 0 && it != 0){
             t2 = std::chrono::high_resolution_clock::now();
             chunk_duration = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
             double chunks_left = (total - it) / chunk_size;
@@ -382,11 +383,11 @@ void test::store_data(const std::vector<uint32_t> &distribution){
 
     // print default infomation
     file << "\t" << "\"CRC\": " << std::dec << this->c->type << ",\n";
-    file << "\t" << "\"Polynomial\": " << std::hex << "0x" << this->c->polynomial << ",\n";
-    file << "\t" << "\"Initial\": " << std::hex << "0x" << this->c->initial << ",\n";
-    file << "\t" << "InputReflected: " << std::boolalpha << this->c->reflected << ",\n";
-    file << "\t" << "ResultReflected: " << std::boolalpha << this->c->resultReflected << ",\n";
-    file << "\t" << "FinalXOR: " << std::boolalpha << this->c->finalXOR << ",\n";
+    file << "\t" << "\"Polynomial\": " << std::hex << "\"0x" << this->c->polynomial << "\",\n";
+    file << "\t" << "\"Initial\": " << std::hex << "\"0x" << this->c->initial << "\",\n";
+    file << "\t" << "\"InputReflected\": " << std::boolalpha << this->c->reflected << ",\n";
+    file << "\t" << "\"ResultReflected\": " << std::boolalpha << this->c->resultReflected << ",\n";
+    file << "\t" << "\"FinalXOR\": " << std::boolalpha << this->c->finalXOR << ",\n";
     file << "\t" << "\"Method\": \"" << this->selected_method << "\",\n";
     file << "\t" << "\"kBits\": " << std::dec << this->c->kBits << ",\n";
     file << "\t" << "\"rBits\": " << std::dec << this->c->rBits << ",\n";
@@ -403,6 +404,39 @@ void test::store_data(const std::vector<uint32_t> &distribution){
     }
     // End Data
     file << "\t" << "],\n";
+
+    // add Systematic Generator Matrix
+    file << "\t" << "\"Systematic_Generator_Matrix\": [\n";
+    for (auto &row: this->c->systematicG){
+        file << "\t\t[";
+        for (auto &col: row){
+            file << std::dec << (int)col;
+            if (&col != &row.back())
+                file << ",";
+        }
+        file << "]";
+        if (&row != &this->c->systematicG.back())
+            file << ",";
+        file << "\n";
+    }
+    file << "\t" << "],\n";
+
+    // add parity check matrix
+    file << "\t" << "\"Parity_Check_Matrix\": [\n";
+    for (auto &row: this->c->H){
+        file << "\t\t[";
+        for (auto &col: row){
+            file << std::dec << (int)col;
+            if (&col != &row.back())
+                file << ",";
+        }
+        file << "]";
+        if (&row != &this->c->H.back())
+            file << ",";
+        file << "\n";
+    }
+    file << "\t" << "],\n";
+
 
     // Add a timestamp to the file
     // first in Unix time
@@ -480,15 +514,23 @@ int main() {
 
     // CRC8 test
     t.push_back(test(new CRC(8, 16, 0x31), "direct"));
-
-    // CRC16 test
-    t.push_back(test(new CRC(16, 32, 0x8005), "direct"));
+    t.push_back(test(new CRC(8, 16, 0x31, 0U, true, true, false), "direct"));
+    t.push_back(test(new CRC(8, 16, 0x2F, ~0U, false, false, true), "direct"));
 
     // CRC8 parity check matrix test
     t.push_back(test(new CRC(8, 16, 0x31), "direct_parityMatrix"));
+    t.push_back(test(new CRC(8, 16, 0x31, 0U, true, true, false), "direct_parityMatrix"));
+    t.push_back(test(new CRC(8, 16, 0x2F, ~0U, false, false, true), "direct_parityMatrix"));
+
+    // CRC16 test
+    t.push_back(test(new CRC(16, 32, 0x8005), "direct"));
+    t.push_back(test(new CRC(16, 32, 0x8005, 0U, true, true, true), "direct")); //CRC16-MAXIM
+    t.push_back(test(new CRC(16, 32, 0x1021, 0x89EC, true, true, false), "direct")); // CRC16-TMS37157
 
     // CRC16 parity check matrix test
     t.push_back(test(new CRC(16, 32, 0x8005), "direct_parityMatrix"));
+    t.push_back(test(new CRC(16, 32, 0x8005, 0U, true, true, true), "direct_parityMatrix"));      // CRC16-MAXIM
+    t.push_back(test(new CRC(16, 32, 0x1021, 0x89EC, true, true, false), "direct_parityMatrix")); // CRC16-TMS37157
 
     // ======================= 
     // Long Runners

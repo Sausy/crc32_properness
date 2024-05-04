@@ -405,6 +405,8 @@ void test::store_data(const std::vector<uint32_t> &distribution){
     // End Data
     file << "\t" << "],\n";
 
+    /*
+
     // add Systematic Generator Matrix
     file << "\t" << "\"Systematic_Generator_Matrix\": [\n";
     for (auto &row: this->c->systematicG){
@@ -436,6 +438,7 @@ void test::store_data(const std::vector<uint32_t> &distribution){
         file << "\n";
     }
     file << "\t" << "],\n";
+    */
 
 
     // Add a timestamp to the file

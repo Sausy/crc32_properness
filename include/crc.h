@@ -37,6 +37,7 @@ public:
                                bool resultReflected = false, bool finalXOR = true);
     // overload function to compute CRC for pre defined object
     uint32_t computeCRC(const std::vector<uint8_t> &data);
+    static uint64_t calculateCRC_unitVec(const std::vector<uint8_t>& message, uint64_t polynomial, int r, int k);
 
     // Generates the generator matrix for CRC codes.
     static std::vector<std::vector<uint8_t>> generatorMatrix(uint32_t polynomial, int r, int k);

@@ -1,5 +1,6 @@
 #include "CRC.h"
 #include <iostream>
+#include "common.h"
 
 /**
  * Constructor to initialize the CRC object.
@@ -208,6 +209,109 @@ uint32_t CRC::computeCRC(const std::vector<uint8_t> &data){
     return computeCRC(this->LUT, data, this->type, this->initial, this->reflected, this->resultReflected, this->finalXOR);
 }
 
+// Function to multiply a polynomial by x^shift (equivalent to left shifting)
+std::vector<int> multiplyByXPower(const std::vector<int>& poly, int shift) {
+    std::vector<int> result(poly.size() + shift, 0);
+    for (int i = 0; i < poly.size(); ++i) {
+        result[i + shift] = poly[i];
+    }
+    return result;
+}
+
+// Function to add two polynomials in GF(2)
+std::vector<int> addPolynomials(const std::vector<int>& poly1, const std::vector<int>& poly2) {
+    int max_size = std::max(poly1.size(), poly2.size());
+    std::vector<int> result(max_size, 0);
+
+    for (int i = 0; i < max_size; ++i) {
+        int a = (i < poly1.size()) ? poly1[i] : 0;
+        int b = (i < poly2.size()) ? poly2[i] : 0;
+        result[i] = a ^ b; // XOR operation
+    }
+
+    return result;
+}
+
+// Function to reduce a polynomial by another polynomial in GF(2)
+std::vector<int> reducePolynomial(const std::vector<int>& poly, const std::vector<int>& generator) {
+    std::vector<int> result = poly;
+    int deg_gen = generator.back();
+
+    while (result.size() > 0 && result.back() >= deg_gen) {
+        int shift = result.back() - deg_gen;
+        std::vector<int> temp = multiplyByXPower(generator, shift);
+        result = addPolynomials(result, temp);
+        while (result.size() > 0 && result.back() == 0) {
+            result.pop_back();
+        }
+    }
+
+    return result;
+}
+
+/**
+ * @brief Generates the generator matrix for a given CRC polynomial and dataword length.
+ * 
+ * @param message 
+ * @param polynomial 
+ * @param r 
+ * @param k 
+ * @return uint64_t 
+ */
+uint64_t CRC::calculateCRC_unitVec(const std::vector<uint8_t>& message, uint64_t polynomial, int r, int k) {
+    // Combine the message into a single large integer for processing.
+    uint64_t data = 0;
+    for (auto byte : message) {
+        data = (data << 8) | byte;
+    }
+
+    // Append r zero bits to the right of the data.
+    data <<= r;
+
+    // Polynomial division: Extract the top bit position of the polynomial.
+    uint64_t highest_bit = 1ull << (r - 1);
+
+    // Perform polynomial division (bitwise division).
+    for (int i = k + r - 1; i >= r; i--) {
+        if (data & (1ull << i)) {  // Check if the ith bit is set.
+            data ^= (polynomial << (i - r));  // Subtract the polynomial shifted left.
+        }
+    }
+
+    // The remaining lower r bits are the CRC.
+    return data & ((1ull << r) - 1);
+}
+
+// Function to convert uint32_t polynomial to std::vector<int> representation
+std::vector<int> convertToGenerator(uint32_t polynomial, int r) {
+    std::vector<int> generator;
+    for (int i = 0; i < r; ++i) {  // Check all 32 bits in a uint32_t
+        if (polynomial & (1 << i)) {  // Check if the i-th bit is set
+            generator.push_back(i);
+        }
+    }
+    generator.push_back(r); // Set the r-th bit to 1
+    return generator;
+}
+
+// TODO: Thsi function is actually in common.h defined i dont know why it 
+// cannot find it 
+// workaround is to copy the function here
+// TODO: this function suddenly stops shifting after 9bits
+std::vector<uint8_t> BitShiftVector_v2(const std::vector<uint8_t> &vec, int shift) {
+    // shift value to the left 
+    // if bit is shifted over the 8bit boundary it is added to the next byte
+    std::vector<uint8_t> shifted_vec(vec.size(), 0);
+    for (int i = 0; i < vec.size(); i++) {
+        shifted_vec[i] = vec[i] << shift;
+        std::cout << "shift " << (vec[i] << shift) << std::endl;
+        if (i < vec.size() - 1) {
+            shifted_vec[i] |= vec[i + 1] >> (8 - shift);
+        }
+    }
+    return shifted_vec;
+}
+
 /**
  * Generates the generator matrix for a given CRC polynomial and dataword length.
  *
@@ -236,59 +340,116 @@ G = 	0	1	0	0   1	0	1	  = [ I_k | -A^T  ]
  */
 std::vector<std::vector<uint8_t>> CRC::SystematicGeneratorMatrix(uint32_t polynomial, int r, int k)
 {
-    // int r = 32 - __builtin_clz(polynomial) - 1; // Assuming polynomial is non-zero, compute r as the degree of the polynomial.
-    // int n = k + r; // Codeword length.
-    //std::vector<std::vector<uint8_t>> G(k, std::vector<uint8_t>(n, 0));
-    auto G = generatorMatrix(polynomial, r, k);
- 
-    int rows = G.size();
-    int cols = G[0].size();
+    
+    int n = k + r; // Codeword length.
+    // G = [ I_k | -A^T ]
+    // means G has the size [k, n]
+    // Initialize the generator matrix with zeroes
+    std::vector<std::vector<uint8_t>> G(k, std::vector<uint8_t>(n, 0));
+    
+    // set the identity matrix
+    for (int i = 0; i < k; ++i)
+        G[i][i] = 1;
 
-    for (int r = 0, lead = 0; r < rows && lead < cols; ++r, ++lead)
-    {
-        int i = r;
-        while (G[i][lead] == 0)
-        {
-            ++i;
-            if (i == rows)
-            {
-                i = r;
-                ++lead;
-                if (lead == cols)
-                    return G;
+    //
+    std::vector<uint8_t> unit_vector(k, 0);
+    std::vector<uint8_t> v1(k, 0);
+    std::vector<uint8_t> p(r,0);
+    v1[k-1] = 1; 
+
+    uint64_t crc = 0; 
+
+    // loop through all possible unit vectors
+    for (auto i = 0; i < k; ++i){
+        // reset the parity vector
+        p = std::vector<uint8_t>(r, 0);
+
+        // TODO the bit shift algorithmus has a bug
+        // it only shifts for the first 8bit correctly 
+        unit_vector = BitShiftVector_v2(v1, i); // this should be BitShiftVector but it cannot be found
+
+        // print the unit vector
+        std::cout << "unit vector: ";
+        for (auto m : unit_vector) {
+            std::cout << std::hex << (int)m << " ";
+        }
+        std::cout << std::endl;
+
+        // calculate the crc for the unit vector
+        crc = calculateCRC_unitVec(unit_vector, (uint64_t)polynomial, r, k); 
+
+        //set bit mask as parity vector
+        for (auto j = 0; j < r; ++j){
+            p.push_back((crc >> j) & 1);
+            G[i][j + k] = (crc >> j) & 1;
+        }
+    }
+
+    /*
+    Example for (7,4)
+    P.s.: since r=3 this means x^2 is the highest degree of the polynomial
+    g(x) = 1+x+x3
+
+    xi      g(x)qi(x)           di(x)   xi+di(x)
+    --------------------------------------
+    x3      (1+x+x3)·1          1+x     1+x+x3
+    x4      (1+x+x3)·x          x+x2    x+x2+x4
+    x5      (1+x+x3)·(1+x2)     1+x+x2  1+x+x2+x5
+    x6      (1+x+x3)·(1+x+x3)   1+x2    1+x2+x6
+    */
+
+    return G;
+
+
+    // init the identity matrix
+    //for (int i = 0; i < k; ++i)
+    //    G[i][i] = 1;
+
+    /*
+    // Generate the parity vector based on the CRC polynomial
+    std::vector<std::vector<uint8_t>> P(k, std::vector<uint8_t>(r, 0));
+    for (int i = 0; i < k; ++i) {
+        std::vector<uint8_t> unitVector(k, 0);
+        unitVector[i] = 1; // Set the i-th position to 1 to represent the unit vector for the i-th message bit
+        P[i] = generateParityVector(unitVector, polynomial, r); // Generate the i-th column of the parity matrix
+    }
+    */
+
+    /*
+    G = generatorMatrix(polynomial, r, k);
+
+    // Perform Gaussian elimination with partial pivoting
+    for (int i = 0; i < k; ++i) {
+        // Pivot: matrix[i][i] should be 1
+        if (G[i][i] == 0) {
+            // Find a row below the current row to swap with
+            bool found = false;
+            for (int row = i + 1; row < k; ++row) {
+                if (G[row][i] == 1) {
+                    std::swap(G[i], G[row]);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                std::cerr << "Failed to find a necessary pivot. The G may not be transformable into systematic form." << std::endl;
+                return {};
             }
         }
 
-        std::swap(G[i], G[r]);
-
-        for (i = 0; i < rows; ++i)
-        {
-            if (i != r && G[i][lead])
-            {
-                for (int j = 0; j < cols; ++j)
-                {
-                    G[i][j] ^= G[r][j];
+        // Zero out all other entries in this column
+        for (int row = 0; row < k; ++row) {
+            if (row != i && G[row][i] == 1) {
+                // XOR current row with the pivot row to make G[row][i] zero
+                for (int j = 0; j < n; ++j) {
+                    G[row][j] ^= G[i][j];
                 }
             }
         }
     }
-
-
-    /*
-    Example for (7,4) 
-    P.s.: since r=3 this means x^2 is the highest degree of the polynomial
-    g(x) = 1+x+x3 
-
-    xi      g(x)qi(x)           di(x)   xi+di(x)  
-    --------------------------------------
-    x3      (1+x+x3)·1          1+x     1+x+x3 
-    x4      (1+x+x3)·x          x+x2    x+x2+x4 
-    x5      (1+x+x3)·(1+x2)     1+x+x2  1+x+x2+x5 
-    x6      (1+x+x3)·(1+x+x3)   1+x2    1+x2+x6 
     */
+    
 
-
-    return G;
 }
 
 
@@ -310,8 +471,8 @@ std::vector<std::vector<uint8_t>> CRC::SystematicGeneratorMatrix(uint32_t polyno
  */
 std::vector<std::vector<uint8_t>> CRC::generatorMatrix(uint32_t polynomial, int r, int k)
 {
-    //int r = 32 - __builtin_clz(polynomial) - 1; // Assuming polynomial is non-zero, compute r as the degree of the polynomial.
-    int n = k + r;                              // Codeword length.
+    // The size of the generator matrix is [k, n] where n = k + r.
+    int n = k + r;  // Codeword length.
     std::vector<std::vector<uint8_t>> G(k, std::vector<uint8_t>(n, 0));
 
     uint32_t polynomial_buffer; 
@@ -355,36 +516,31 @@ std::vector<std::vector<uint8_t>> CRC::generateParityCheckMatrix(uint32_t polyno
 
     std::vector<std::vector<uint8_t>> H(r, std::vector<uint8_t>(n, 0));
 
+    // Generate the systematic generator matrix G
     auto G = SystematicGeneratorMatrix(polynomial, r, k);
 
-    // Seperate the identity matrix from the generator matrix
-    // for simplicity we generate the identity matrix
-    std::vector<std::vector<uint8_t>> I_k(k, std::vector<uint8_t>(k, 0));
-    // Set the diagonal to be 1s
-    for (auto t = 0; t < k; t++)
-        I_k[t][t] = 1;
+    // Load Identiy Matrix to H
+    // amount of rows is r=n-k
+    // H = [ P | I ]
+    // H[n-k, n]
+    // Since P [n-k, k] we need to add an offset of k to the column
+    for (auto t = 0; t < r; t++)
+        H[t][t + k] = 1;    
 
-    // Remove the Identiy matrix from G and write it to Matrix P
-    std::vector<std::vector<uint8_t>> P(k, std::vector<uint8_t>(n - k, 0));
+    // G = [ I | P_t ] 
+    // G[k, n]
+    // this means I = [k, k]
+    // P_t has the size [k, n-k]
+    std::vector<std::vector<uint8_t>> P(r, std::vector<uint8_t>(k, 0));
     for (auto row = 0; row < k; row++)
-        for (auto col = 0; col < (n - k); col++)
-            P[row][col] = G[row][col + k];
-
-    // Transpose P
-    std::vector<std::vector<uint8_t>> P_T(n - k, std::vector<uint8_t>(k, 0));
-    for (auto row = 0; row < k; row++)
-        for (auto col = 0; col < (n - k); col++)
-            P_T[col][row] = P[row][col];
+        for (auto col = 0; col < r; col++)
+            P[col][row] = G[row][col + k]; // col and row are swaped to directly get the transposed
 
     // Create the parity check matrix H
-    // H = [P_T | I_k]
+    // H = [ P | I]
     for (auto row = 0; row < r; row++)
-        for (auto col = 0; col < n - k; col++)
-            H[row][col] = P_T[row][col];
-
-    for (auto row = 0; row < r; row++)    
-        for (auto col = n - k; col < n; col++)
-            H[row][col] = I_k[row][col - (n - k)];
+        for (auto col = 0; col < k; col++)
+            H[row][col] = P[row][col];
 
 
     return H;

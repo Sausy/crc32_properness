@@ -1,6 +1,7 @@
 # Compiler settings - Can change these to your preferred compiler and options
 CXX = g++
-CXXFLAGS = -g -Wall -std=c++17 -Iinclude
+CXXFLAGS = -g -Wall -std=c++17 -Iinclude -Og
+# maybe add -o3 for optimization
 BUILD_DIR = ./build
 
 # Detect the operating system

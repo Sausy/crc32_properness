@@ -76,26 +76,84 @@ int main()
 
     //====== SYSTEMATIC GENERATOR MATRIX ======
     // Test default Hamming(7,4) code meaning k=4 and r= 3
+    /*
+     * The parity check matrix shall be tested according to
+     * [Error Control Coding by Shu Lin]
+     * page 52. given message polynomial m(x) = 1 + x^2 + x^3
+     * page 55. given the Generator Matrix
+     * page 77. calculation of weight distribution of dual "B"
+     * page 77. paritiy check matrix H
+     */
     std::cout << "\n===================="
               << "\nStarting Systematic Generator Matrix Test"
-              << "Generator Matrix r=3, k=4"
+              << "Generator Matrix r=3, k=4\n"
+              << "poly: 0xB for CRC4 Hamming(7,4)\n"
+              << "counter check with [Error Control Coding by Shu Lin] page 55"
               << "\n====================" << std::endl;
-    auto gen_matrix_7_4_hamming = CRC::SystematicGeneratorMatrix(0xB, 3, 4); 
-    std::cout << "Systematic Generator Matrix Hamming(7,4):\n";
+    auto syst_gen_matrix_7_4_hamming = CRC::SystematicGeneratorMatrix(0xB, 3, 4);
+    auto gen_matrix_7_4_hamming = CRC::generatorMatrix(0xB, 3, 4);
+    std::cout << "CRC3 G-Generator Matrix\n";
     printMatrix(gen_matrix_7_4_hamming);
+    std::cout << "Systematic Generator Matrix Hamming(7,4):\n";
+    printMatrix(syst_gen_matrix_7_4_hamming);
+    /* correct G
+    please not that in the paper [I | P^T] are swapped 
+    but this does not make a difference in the final result if 
+    kept consistent
+
+    1 0 0 0 1 1 0
+    0 1 0 0 0 1 1
+    0 0 1 0 1 1 1
+    0 0 0 1 1 0 1
+    */
+
+    std::vector<std::vector<uint8_t>> G_correct = {
+        {1, 0, 0, 0, 1, 1, 0},
+        {0, 1, 0, 0, 0, 1, 1},
+        {0, 0, 1, 0, 1, 1, 1},
+        {0, 0, 0, 1, 1, 0, 1}
+    };
+    assert(syst_gen_matrix_7_4_hamming == G_correct);
+
 
 
     //====== PARITY CHECK MATRIX ======
+    /*
+    * The parity check matrix shall be tested according to 
+    * [Error Control Coding by Shu Lin]
+    * page 52. given message polynomial m(x) = 1 + x^2 + x^3
+    * page 55. given the Generator Matrix 
+    * page 77. calculation of weight distribution of dual "B"
+    * page 77. paritiy check matrix H
+    */
     std::cout << "\n===================="
               << "\nStarting Parity Check Matrix Test"
-              << "Generator Matrix r=3, k=4"
+              << "Generator Matrix r=3, k=4\n"
+              << "poly: 0xB for CRC4 Hamming(7,4)\n"
+              << "counter check with [Error Control Coding by Shu Lin] page 77"
               << "\n====================" << std::endl;
     // Testing Parity Check Matrix for CRC4
     // The polynom: 0xB for CRC4 is 1011 in binary
     // The Parity Check Matrix has the size of [n-k,n]
-    auto parity_check_matrix_crc4 = CRC::generateParityCheckMatrix(0xB, 3, 4); // r = 4 for CRC4, k =3
+    auto parity_check_matrix_crc4 = CRC::generateParityCheckMatrix(0xB, 3, 4); 
     std::cout << "Parity Check Matrix for CRC4:\n";
     printMatrix(parity_check_matrix_crc4);
+    /* correct H
+    please not that in the paper [P | I] are swapped
+    but this does not make a difference in the final result if
+    kept consistent
+
+    1 0 1 1 1 0 0
+    1 1 1 0 0 1 0
+    0 1 1 1 0 0 1
+
+    */
+   std::vector<std::vector<uint8_t>> H_correct = {
+        {1, 0, 1, 1, 1, 0, 0},
+        {1, 1, 1, 0, 0, 1, 0},
+        {0, 1, 1, 1, 0, 0, 1}
+    };
+    assert(parity_check_matrix_crc4 == H_correct);
 
     /*
 
@@ -110,6 +168,50 @@ int main()
     std::cout << "Parity Check Matrix for CRC16:\n";
     printMatrix(parity_check_matrix_crc16);
     */
+
+    /*
+    std::cout << "\n===================="
+              << "\nStarting Parity Check Matrix Test"
+              << "No Matrix to counter check but \n"
+              << "the size of the matrix can be checked"
+              << "Generator Matrix r=8, k=16\n"
+              << "poly: 0x1D for CRC8\n"
+              << "\n====================" << std::endl;
+    // H [n-k,n]
+    // G [k,n]
+    auto H = CRC::generateParityCheckMatrix(0x1D, 8, 16); 
+    auto sysG = CRC::SystematicGeneratorMatrix(0x1D, 8, 16);
+    auto G = CRC::generatorMatrix(0x1D, 8, 16);
+    std::cout << "CRC8 G-Generator Matrix\n";
+    printMatrix(G);
+    
+    std::cout << "CRC8 Systematic Generator Matrix\n";
+    printMatrix(sysG);
+    
+    std::cout << "CRC8 H-Parity Check Matrix\n";
+    printMatrix(H);
+    */
+
+    std::cout << "\n===================="
+              << "\nStarting Parity Check Matrix Test"
+              << "No Matrix to counter check but \n"
+              << "the size of the matrix can be checked"
+              << "Generator Matrix r=6, k=16\n"
+              << "poly: 0x38 for CRC6\n"
+              << "\n====================" << std::endl;
+    // H [n-k,n]
+    // G [k,n]
+    auto H = CRC::generateParityCheckMatrix(0x38, 6, 16);
+    auto sysG = CRC::SystematicGeneratorMatrix(0x38, 6, 16);
+    auto G = CRC::generatorMatrix(0x38, 6, 16);
+    std::cout << "CRC6 G-Generator Matrix\n";
+    printMatrix(G);
+
+    std::cout << "CRC6 Systematic Generator Matrix\n";
+    printMatrix(sysG);
+
+    std::cout << "CRC6 H-Parity Check Matrix\n";
+    printMatrix(H);
 
     return 0;
 }

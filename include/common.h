@@ -7,6 +7,9 @@
 // Incremental Vector like a bit vector
 void incVec(std::vector<uint8_t> &data, unsigned int increment = 1);
 
+// Shift a vector to the left by a given amount
+std::vector<uint8_t> BitShiftVector(const std::vector<uint8_t> &vec, int shift);
+
 // Print a vector
 void printVector(const std::vector<uint8_t> &v);
 

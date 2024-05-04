@@ -32,6 +32,28 @@ void incVec(std::vector<uint8_t>& data, unsigned int increment) {
     */
 }
 
+/**
+ * @brief  Shifts a vector to the left by a given amount.
+ *
+ * @param vec The vector to be shifted.
+ * @param shift The amount by which to shift the vector.
+ * @return The shifted vector.
+ * @note The vector is treated as a big-endian representation of an unsigned integer.
+ *      The shift operation is equivalent to multiplying the number by 2^shift.
+ */
+std::vector<uint8_t> BitShiftVector(const std::vector<uint8_t> &vec, int shift) {
+    // shift value to the left 
+    // if bit is shifted over the 8bit boundary it is added to the next byte
+    std::vector<uint8_t> shifted_vec(vec.size(), 0);
+    for (int i = 0; i < vec.size(); i++) {
+        shifted_vec[i] = vec[i] << shift;
+        if (i < vec.size() - 1) {
+            shifted_vec[i] |= vec[i + 1] >> (8 - shift);
+        }
+    }
+    return shifted_vec;
+}
+
 
 /**
  * @brief Print a vector

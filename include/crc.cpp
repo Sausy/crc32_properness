@@ -16,10 +16,10 @@
 CRC::CRC(int type, int n, uint32_t polynomial, uint32_t initial, bool reflected, bool resultReflected, bool finalXOR){
     
     std::cout<<"\n[INFO] CRC object created. " << std::endl;
-    std::cout<<"[INFO] CRC type: " << type << std::endl;
-    std::cout<<"[INFO] CRC polynomial: " << polynomial << std::endl;
-    std::cout<<"[INFO] CRC initial: " << initial << std::endl;
-    std::cout<<"[INFO] CRC reflected: " << reflected << std::endl;
+    std::cout<<"[INFO] CRC type: r=" << std::dec << type << std::endl;
+    std::cout<<"[INFO] CRC polynomial: " << std::hex << "0x" << polynomial << std::endl;
+    std::cout<<"[INFO] CRC initial: " << std::hex << initial << std::endl;
+    std::cout<<"[INFO] CRC reflected: "<< std::dec << reflected << std::endl;
     std::cout<<"[INFO] CRC result reflected: " << resultReflected << std::endl;
     std::cout<<"[INFO] CRC final XOR: " << finalXOR << std::endl;
 
@@ -40,8 +40,9 @@ CRC::CRC(int type, int n, uint32_t polynomial, uint32_t initial, bool reflected,
 
     if (this->kBits < 0)
         throw std::invalid_argument("Invalid k must be > 0");
-
-    this->LUT = createLUT(polynomial, type, reflected);
+    
+    // generate a LUT that is not reflected
+    this->LUT = createLUT(polynomial, type, false);
     this->G = generatorMatrix(polynomial, this->rBits, this->kBits);
     this->systematicG = SystematicGeneratorMatrix(polynomial, this->rBits, this->kBits);
     this->H = generateParityCheckMatrix(polynomial, this->rBits, this->kBits); 
@@ -102,6 +103,7 @@ std::vector<uint32_t> CRC::createLUT(uint32_t polynomial, int type, bool reflect
     }
     return lut;
 }
+
 
 /**
  * Reflects the lower 'nBits' bits of 'data'.
@@ -166,6 +168,13 @@ uint32_t CRC::computeCRC(const std::vector<uint32_t> &lut, const std::vector<uin
 
     uint32_t crc = initial; // Start with the initial CRC value.
     uint32_t idx = 0; 
+
+    //std::cout << "type: " << std::dec << type << std::endl;
+    //std::cout << "shift: " << std::dec << shift << std::endl;
+    //std::cout << "lut[1]: " << std::hex << lut[1] << std::endl;
+    //std::cout << "data[0]" << std::hex << data[0] << std::endl;
+
+
     for (auto byte : data)
     {
         if (inputReflected)
@@ -198,33 +207,6 @@ uint32_t CRC::computeCRC(const std::vector<uint32_t> &lut, const std::vector<uin
 uint32_t CRC::computeCRC(const std::vector<uint8_t> &data){
     return computeCRC(this->LUT, data, this->type, this->initial, this->reflected, this->resultReflected, this->finalXOR);
 }
-
-/*
-// Function to multiply matrices
-std::vector<uint8_t> multiply(const std::vector<std::vector<uint8_t>> &G, const std::vector<uint8_t> &vec)
-{
-    std::vector<uint8_t> result(G.size(), 0);
-    for (size_t i = 0; i < G.size(); ++i)
-    {
-        for (size_t j = 0; j < vec.size(); ++j)
-        {
-            result[i] ^= (G[i][j] & vec[j]);
-        }
-    }
-    return result;
-}
-
-// Function to check if vector is zero
-bool isZero(const std::vector<uint8_t> &vec)
-{
-    for (int v : vec)
-    {
-        if (v != 0)
-            return false;
-    }
-    return true;
-}
-*/
 
 /**
  * Generates the generator matrix for a given CRC polynomial and dataword length.

@@ -125,6 +125,21 @@
     "xstring": "cpp",
     "xtr1common": "cpp",
     "xutility": "cpp",
-    "bitset": "cpp"
+    "bitset": "cpp",
+    "array": "cpp",
+    "deque": "cpp",
+    "fstream": "cpp",
+    "numeric": "cpp",
+    "queue": "cpp",
+    "ranges": "cpp",
+    "set": "cpp",
+    "span": "cpp",
+    "typeindex": "cpp",
+    "unordered_set": "cpp",
+    "xtree": "cpp",
+    "coroutine": "cpp",
+    "resumable": "cpp",
+    "filesystem": "cpp",
+    "map": "cpp"
   }
 }

@@ -2,6 +2,7 @@
 #include <vector>
 #include <cstdint>
 #include <iomanip>
+#include <cmath>
 
 class CRC
 {

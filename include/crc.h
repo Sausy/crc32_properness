@@ -35,6 +35,13 @@ public:
                                int type = 32, //defines if 8bit, 16bit or 32bit CRC
                                uint32_t initial = 0xFFFFFFFF, bool inputReflected = false,
                                bool resultReflected = false, bool finalXOR = true);
+    //
+    static uint64_t computeCRC( uint64_t polynomial,
+                                uint8_t r,
+                                const std::vector<uint8_t> &message,
+                                bool conf_crcPoly_reflect = false, 
+                                bool conf_inReflect = true, bool conf_outReflect = true, bool conf_outXor = true);
+
     // overload function to compute CRC for pre defined object
     uint32_t computeCRC(const std::vector<uint8_t> &data);
     static uint64_t calculateCRC_unitVec(const std::vector<uint8_t>& message, uint64_t polynomial, int r, int k);
@@ -49,6 +56,8 @@ public:
 private:
     // Helper function to reflect bits of a number.
     static uint32_t reflect(uint32_t data, int nBits);
+    // generates a unit vector based on size and shift
+    static std::vector<uint8_t> shift_unitVector(uint8_t size, uint8_t shift);
 };
 
 

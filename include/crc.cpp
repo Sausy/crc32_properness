@@ -77,6 +77,9 @@ CRC::CRC(int type, int n, uint32_t polynomial, uint32_t initial, bool reflected,
  */
 std::vector<uint32_t> CRC::createLUT(uint32_t polynomial, int type, bool reflected) {
     std::vector<uint32_t> lut(256, 0);
+    uint64_t mask = 0ull; // 0xFFFFFFFF >> (32 - type);
+    mask = mask | ((~0ull >> uint64_t(64 - type)));
+
     for (int i = 0; i < 256; ++i) {
         uint32_t crc = (reflected) ? reflect(i, 8) : i;
         crc <<= type - 8; // Prepare the byte for processing in an 'n'-bit register.
@@ -89,18 +92,8 @@ std::vector<uint32_t> CRC::createLUT(uint32_t polynomial, int type, bool reflect
         }
         lut[i] = reflected ? reflect(crc, type) : crc;
 
-        switch (type)
-        {
-        case 8:
-            lut[i] = lut[i] & 0xFF;
-            break;
-        case 16:
-            lut[i] = lut[i] & 0xFFFF;
-            break;
-        default:
-            break;
-        }
-        
+        // to ensure that the length of the crc is correct
+        lut[i] = lut[i] & mask;
     }
     return lut;
 }
@@ -161,12 +154,15 @@ uint32_t CRC::computeCRC(const std::vector<uint32_t> &lut, const std::vector<uin
                          uint32_t initial, bool inputReflected,
                          bool resultReflected, bool finalXOR)
 {
+    uint64_t output_cleaner = 0ull; // 0xFFFFFFFF >> (32 - type);
+    output_cleaner = output_cleaner | ((~0ull >> uint64_t(64 - type)));
+
+    // Todo make this more flexible
+    // by allowing crc types between r [1, 64]  
     if (type != 8 && type != 16 && type != 32)
-        throw std::invalid_argument("Invalid CRC type specified.");
+        throw std::invalid_argument("Ror now Invalid CRC type specified. needs to be more flexible");
 
     uint32_t shift = type - 8;
-    uint32_t output_cleaner = 0xFFFFFFFF >> (32 - type);
-
     uint32_t crc = initial; // Start with the initial CRC value.
     uint32_t idx = 0; 
 
@@ -189,8 +185,8 @@ uint32_t CRC::computeCRC(const std::vector<uint32_t> &lut, const std::vector<uin
     if (resultReflected)
         crc = reflect(crc, type); // Reflect the final CRC value if needed.
     if (finalXOR)
-        crc ^= 0xFFFFFFFF ; // Apply the final XOR mask if specified.
-    
+        crc ^= ~0ull; // Apply the final XOR mask if specified.
+
     crc = crc & output_cleaner;
 
     return crc;
@@ -212,7 +208,7 @@ uint32_t CRC::computeCRC(const std::vector<uint8_t> &data){
 // Function to multiply a polynomial by x^shift (equivalent to left shifting)
 std::vector<int> multiplyByXPower(const std::vector<int>& poly, int shift) {
     std::vector<int> result(poly.size() + shift, 0);
-    for (int i = 0; i < poly.size(); ++i) {
+    for (uint32_t i = 0; i < poly.size(); ++i) {
         result[i + shift] = poly[i];
     }
     return result;
@@ -220,10 +216,10 @@ std::vector<int> multiplyByXPower(const std::vector<int>& poly, int shift) {
 
 // Function to add two polynomials in GF(2)
 std::vector<int> addPolynomials(const std::vector<int>& poly1, const std::vector<int>& poly2) {
-    int max_size = std::max(poly1.size(), poly2.size());
+    uint32_t max_size = (uint32_t)std::max(poly1.size(), poly2.size());
     std::vector<int> result(max_size, 0);
 
-    for (int i = 0; i < max_size; ++i) {
+    for (uint32_t i = 0; i < max_size; ++i) {
         int a = (i < poly1.size()) ? poly1[i] : 0;
         int b = (i < poly2.size()) ? poly2[i] : 0;
         result[i] = a ^ b; // XOR operation
@@ -249,6 +245,59 @@ std::vector<int> reducePolynomial(const std::vector<int>& poly, const std::vecto
     return result;
 }
 
+
+// Computes the CRC based on the given parameters.
+uint64_t CRC::computeCRC(   uint64_t polynomial, 
+                            uint8_t r,  
+                            const std::vector<uint8_t>& message,
+                            bool conf_crcPoly_reflect,
+                            bool conf_inReflect, bool conf_outReflect, bool conf_outXor) {
+    if (r < 1 || r > 64) {
+        throw std::invalid_argument("r must be within the range [1,64]");
+    }
+
+    uint64_t crc = ~0uLL;  // Start with an initial value of 0.
+    uint64_t topbit = 1ULL << (r - 1);  // Highest bit of the CRC register.
+    uint64_t mask = 0ull; // 0xFFFFFFFF >> (32 - type);
+    mask = mask | ((~0ull >> uint64_t(64 - r)));
+
+    // Process each byte in the message.
+    for (uint8_t byte : message) {
+        uint64_t data = byte;
+
+        // Reflect the input byte if necessary.
+        if (conf_inReflect) {
+            data = reflect(data, 8);
+        }
+        //std::cout << "data :" << std::hex << data << std::endl;
+
+        // Bring the byte into the CRC register.
+        crc ^= (data << (r - 8));
+
+        // Perform modulo-2 division, one bit at a time.
+        for (int bit = 0; bit < 8; ++bit) {
+            if (crc & topbit) {
+                crc = (crc << 1) ^ polynomial;  // CRC is shifted and XOR'd with the polynomial.
+            } else {
+                crc <<= 1;  // Just shift left when the top bit is 0.
+            }
+        }
+    }
+
+    // Final XOR operation after all bits processed.
+    if (conf_outReflect) {
+        crc = reflect(crc, r);  // Reflect the CRC result if required.
+    }
+
+    if (conf_outXor) {
+        crc ^= ((1ULL << r) - 1);  // Perform final XOR operation.
+    }
+
+    crc = crc & mask; // mask the crc value to the r bits
+
+    return crc;  // Return the final CRC value.
+}
+
 /**
  * @brief Generates the generator matrix for a given CRC polynomial and dataword length.
  * 
@@ -269,7 +318,7 @@ uint64_t CRC::calculateCRC_unitVec(const std::vector<uint8_t>& message, uint64_t
     data <<= r;
 
     // Polynomial division: Extract the top bit position of the polynomial.
-    uint64_t highest_bit = 1ull << (r - 1);
+    //uint64_t highest_bit = 1ull << (r - 1);
 
     // Perform polynomial division (bitwise division).
     for (int i = k + r - 1; i >= r; i--) {
@@ -278,8 +327,22 @@ uint64_t CRC::calculateCRC_unitVec(const std::vector<uint8_t>& message, uint64_t
         }
     }
 
+    //reverse the data
+    // make the following maybe configurable   
+    // data = reflect(data, r);   // not needed for current implementation 
+    
+    
+    //
+    data ^= ~0ull; // XOR with F  
+
+    // mask 
+    uint64_t mask = 0ull; 
+    // depending on the r value the mask is set
+    mask = mask | ((~0ull >> uint64_t(64-r))); 
+    std::cout << "[" << std::dec << r << "]mask: " << std::hex << mask << std::endl;
+
     // The remaining lower r bits are the CRC.
-    return data & ((1ull << r) - 1);
+    return data & mask;
 }
 
 // Function to convert uint32_t polynomial to std::vector<int> representation
@@ -298,17 +361,41 @@ std::vector<int> convertToGenerator(uint32_t polynomial, int r) {
 // cannot find it 
 // workaround is to copy the function here
 // TODO: this function suddenly stops shifting after 9bits
-std::vector<uint8_t> BitShiftVector_v2(const std::vector<uint8_t> &vec, int shift) {
+std::vector<uint8_t> BitShiftVector_v2(const std::vector<uint8_t> &vec, uint8_t shift) {
     // shift value to the left 
     // if bit is shifted over the 8bit boundary it is added to the next byte
     std::vector<uint8_t> shifted_vec(vec.size(), 0);
-    for (int i = 0; i < vec.size(); i++) {
-        shifted_vec[i] = vec[i] << shift;
-        std::cout << "shift " << (vec[i] << shift) << std::endl;
-        if (i < vec.size() - 1) {
-            shifted_vec[i] |= vec[i + 1] >> (8 - shift);
-        }
+    std::vector<uint8_t> buffer = vec;
+
+    if (shift == 0) {
+        return vec;
     }
+
+    for (auto s = 0; s < shift; ++s){
+        for (int i = (int)vec.size(); i > 0; i--) {
+            shifted_vec[i] = (buffer[i] << 1) & 0xFF;
+
+            if(((buffer[i+1] | 0x7F) == 0xFF) && (i < (int)(vec.size() - 1))){
+                shifted_vec[i] |= 0x01;
+            }
+        }
+        buffer = shifted_vec;
+    }
+    
+    return shifted_vec;
+}
+
+// @brief shift the unit vector by a given amount
+// @param vec the unit vector
+// @param shift the amount to shift the unit vector
+// @return the shifted unit vector
+std::vector<uint8_t> CRC::shift_unitVector(uint8_t size, uint8_t shift) {
+    // shift value to the left 
+    // if bit is shifted over the 8bit boundary it is added to the next byte
+    std::vector<uint8_t> shifted_vec(size, 0);
+
+    shifted_vec[size - shift - 1] = 1;
+
     return shifted_vec;
 }
 
@@ -353,20 +440,24 @@ std::vector<std::vector<uint8_t>> CRC::SystematicGeneratorMatrix(uint32_t polyno
 
     //
     std::vector<uint8_t> unit_vector(k, 0);
-    std::vector<uint8_t> v1(k, 0);
+    //std::vector<uint8_t> v1(k, 0);
     std::vector<uint8_t> p(r,0);
-    v1[k-1] = 1; 
+    //v1[k-1] = 1; 
 
     uint64_t crc = 0; 
 
+    std::cout   << "\n====================\nStarting with shifting through the unit vectors" 
+                << std::endl; 
+
     // loop through all possible unit vectors
-    for (auto i = 0; i < k; ++i){
+    for (uint8_t i = 0; i < (uint8_t)k; ++i){
         // reset the parity vector
         p = std::vector<uint8_t>(r, 0);
 
         // TODO the bit shift algorithmus has a bug
-        // it only shifts for the first 8bit correctly 
-        unit_vector = BitShiftVector_v2(v1, i); // this should be BitShiftVector but it cannot be found
+        // it only shifts for the first 8bit correctly
+        //unit_vector = BitShiftVector_v2(v1, i); // this should be BitShiftVector but it cannot be found
+        unit_vector = shift_unitVector(k, i);
 
         // print the unit vector
         std::cout << "unit vector: ";
@@ -376,14 +467,28 @@ std::vector<std::vector<uint8_t>> CRC::SystematicGeneratorMatrix(uint32_t polyno
         std::cout << std::endl;
 
         // calculate the crc for the unit vector
-        crc = calculateCRC_unitVec(unit_vector, (uint64_t)polynomial, r, k); 
+        //crc = calculateCRC_unitVec(unit_vector, (uint64_t)polynomial, r, k);
+        crc = computeCRC(polynomial, r, unit_vector, false, true, false, true);
+
+        std::cout << "[" << std::hex << polynomial  << "]crc: " << std::hex << crc << std::endl;
 
         //set bit mask as parity vector
         for (auto j = 0; j < r; ++j){
             p.push_back((crc >> j) & 1);
             G[i][j + k] = (crc >> j) & 1;
         }
+
     }
+
+    // print the generator matrix
+    std::cout << "Generator Matrix: " << std::endl;
+    for (auto row : G) {
+        for (auto col : row) {
+            std::cout << std::hex << (int)col << " ";
+        }
+        std::cout << std::endl;
+    }
+    
 
     /*
     Example for (7,4)

@@ -38,9 +38,12 @@ public:
     //
     static uint64_t computeCRC( uint64_t polynomial,
                                 uint8_t r,
+                                uint16_t k,
                                 const std::vector<uint8_t> &message,
                                 bool conf_crcPoly_reflect = false, 
-                                bool conf_inReflect = true, bool conf_outReflect = true, bool conf_outXor = true);
+                                bool conf_inReflect = true, bool conf_outReflect = true, bool conf_outXor = true,
+                                uint64_t conf_init = 0ull,
+                                bool conf_inputIsBitVecotr = false);
 
     // overload function to compute CRC for pre defined object
     uint32_t computeCRC(const std::vector<uint8_t> &data);
@@ -52,6 +55,9 @@ public:
 
     // Generates the parity check matrix for CRC codes.
     static std::vector<std::vector<uint8_t>> generateParityCheckMatrix(uint32_t polynomial, int r, int k);
+
+    // Shifts data from a vector to a number.
+    static uint64_t shift_data_from_vec(const std::vector<uint8_t>& data, int k, int shift);
 
 private:
     // Helper function to reflect bits of a number.

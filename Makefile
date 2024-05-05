@@ -35,7 +35,7 @@ $(BUILD_DIR)/%.o: $(INC_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Test executables
-$(BUILD_DIR)/test_%$(EXEC_SUFFIX) : $(INC_DIR)/test_%.cpp $(BUILD_DIR)/crc.o
+$(BUILD_DIR)/test_%$(EXEC_SUFFIX) : $(INC_DIR)/test_%.cpp $(BUILD_DIR)/crc.o $(BUILD_DIR)/common.o
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
 # Main executable

@@ -245,57 +245,185 @@ std::vector<int> reducePolynomial(const std::vector<int>& poly, const std::vecto
     return result;
 }
 
+uint64_t CRC::shift_data_from_vec(const std::vector<uint8_t>& data, int k, int shift) {
+    // Start with a uint64_t to accumulate the bits
+    uint64_t result = 0;
 
-// Computes the CRC based on the given parameters.
+    // Load bits from vector to the result considering the vector as big-endian
+    for (size_t i = 0; i < data.size(); ++i) {
+        // Shift left by 8 each time as we add a new byte, then OR with the new byte
+        result = (result << 8) | data[i];
+    }
+
+    // Adjust result based on bit length k
+    // Remove the bits above k by shifting left to remove excess bits and then shifting back right
+    if (k < 64) {
+        result = (result << (64 - k)) >> (64 - k);
+    }
+
+    // Apply the shift: align the desired bits to the least significant bits of the result
+    if (shift > 0) {
+        // Calculate how many bits to shift right to get the desired output
+        int shift_amount = k - shift;
+        result = (result >> shift_amount) & ((1ULL << shift) - 1);
+    } else {
+        result = 0; // If shift is zero, return zero
+    }
+
+    return result;
+}
+
+
+/**
+ * @brief Generates the generator matrix for a given CRC polynomial and dataword length.
+ * 
+ * @param polynomial The polynomial used in the CRC calculation, specified as a hex value.
+ * @param r The length of the CRC.
+ * @param message The length of the dataword. 
+ * @param conf_crcPoly_reflect  
+ * @param conf_inReflect 
+ * @param conf_outReflect 
+ * @param conf_outXor  
+ * @return uint64_t The CRC value.
+ * 
+ * Mathematical Background:
+ * - The generator matrix G in coding theory is used to generate the codewords from the datawords.
+ * - The matrix is structured such that multiplying it by a dataword vector (in binary) will result in a codeword vector.
+ * - The rows of G represent the coefficients of the polynomial that multiplies the data bits to form the codeword.
+ * - For CRC, the generator matrix is constructed by appending the identity matrix of size k and the matrix representation of the polynomial.
+ * 
+ */
 uint64_t CRC::computeCRC(   uint64_t polynomial, 
                             uint8_t r,  
+                            uint16_t k, 
                             const std::vector<uint8_t>& message,
                             bool conf_crcPoly_reflect,
-                            bool conf_inReflect, bool conf_outReflect, bool conf_outXor) {
+                            bool conf_inReflect, bool conf_outReflect, bool conf_outXor,
+                            uint64_t conf_init, 
+                            bool conf_inputIsBitVecotr) {
     if (r < 1 || r > 64) {
         throw std::invalid_argument("r must be within the range [1,64]");
     }
 
-    uint64_t crc = ~0uLL;  // Start with an initial value of 0.
-    uint64_t topbit = 1ULL << (r - 1);  // Highest bit of the CRC register.
+    // to ensure that the crc_register only hols 
+    // data that is r bits long
     uint64_t mask = 0ull; // 0xFFFFFFFF >> (32 - type);
     mask = mask | ((~0ull >> uint64_t(64 - r)));
 
-    // Process each byte in the message.
-    for (uint8_t byte : message) {
-        uint64_t data = byte;
+    // crc shift register
+    // here is trap init value must be
+    // put infront of the data 
+    // and is not the initial value of the crc_register
+    uint64_t crc_reg = 0ull; //~0uLL; 
 
-        // Reflect the input byte if necessary.
-        if (conf_inReflect) {
-            data = reflect(data, 8);
+    bool flag_MSB_one = false;
+
+    // reflect the input message if required
+    std::vector<uint8_t> data = message;
+
+    // if message is a bit vector 
+    // the bit data must be shifted to 
+    // a vector
+    /*
+    uint8_t vector_pointer = (uint8_t)(r - 1);
+    uint8_t pos_counter = 0 ;
+    if(conf_inputIsBitVecotr){
+        // reset the data vector
+        data = std::vector<uint8_t>(r, 0);
+        pos_counter = 0; 
+
+        for(auto i = message.size(); i > 0; i--){
+            if(pos_counter % 8 == 0 && pos_counter != 0)
+                vector_pointer--;
+            // i%8 will have results in the range of [0,7]
+            data[vector_pointer] |= (message[i-1] & 0x01) << (int)(pos_counter % 8);
+            pos_counter++; 
         }
-        //std::cout << "data :" << std::hex << data << std::endl;
+    }
+    */
 
-        // Bring the byte into the CRC register.
-        crc ^= (data << (r - 8));
+    // if the input is a bit vector the bit length is the size of the vector
+    uint32_t loop_max = k; 
+    if(conf_inputIsBitVecotr)
+        loop_max = message.size() * 8;
+    loop_max += r;
 
-        // Perform modulo-2 division, one bit at a time.
-        for (int bit = 0; bit < 8; ++bit) {
-            if (crc & topbit) {
-                crc = (crc << 1) ^ polynomial;  // CRC is shifted and XOR'd with the polynomial.
-            } else {
-                crc <<= 1;  // Just shift left when the top bit is 0.
-            }
+    if (conf_inReflect){
+        // TODO: make this more flexible 
+        std::cout << "[INFO] Reflecting input data" << std::endl;
+        for (auto& byte : data){
+            //hacky workaround will fail for e.g.: k = 15
+            if(k < 8)
+                byte = reflect(byte, k);  // Reflect each byte of the input message if required.
+            else
+                byte = reflect(byte, 8);  // Reflect each byte of the input message if required.
+        }
+    }
+
+    // print out data 
+    std::cout << "[INFO] Data: ";
+    printVector(data);
+
+
+    // Process each byte in the message.
+    // e.g.: for a 3bit message it takes 4 iterations
+    // crc-reg       message = 0b111
+    // [0, 0 , 0] | (0b111 >> 3) = 0b000
+    // [0, 0 , 0] | (0b111 >> 2) = 0b001
+    // [0, 0 , 0] | (0b111 >> 1) = 0b011
+    // [0, 0 , 0] | (0b111 >> 0) = 0b111
+    // which is eqaul to i in 0 <= i <= 3 
+    // where 3 equals the size of the message
+
+    std::cout << "k: " << (int)(k) << std::endl;
+    std::cout << "loops: " << (int)(k+r) << std::endl;
+
+    uint32_t loop_up = 1; 
+    if (conf_inputIsBitVecotr)
+        loop_up = 8;
+
+    for (uint32_t i = 0; i <= (uint32_t)(loop_max); i+=loop_up) {
+        // reset flag 
+        flag_MSB_one = false;
+
+        // enxure the crc_reg is has only bits 
+        // in the length of r 
+        crc_reg = crc_reg & mask;
+
+        // check if MSB is "1" and therfor if it will be shifted 
+        // out in the next shift operation
+        //std::cout << "[INFO] shift: " << (int)(r-1) << "\tcrc_reg: " << std::hex << (int)(crc_reg >> (r-1)) << std::endl;
+        if (((crc_reg >> (r-1)) & 1ULL) == 1)
+            flag_MSB_one = true;
+
+        // shift the crc_reg by 1
+        crc_reg <<= 1;  
+        // load next bit from the message
+        crc_reg |= (shift_data_from_vec(data, k, i) & 1ull);
+
+        if (conf_inputIsBitVecotr){
+            std::cout << "[" << std::dec << (int)i << "] crc_reg: " << std::hex << crc_reg << std::endl;
+            std::cout << "shift: " << std::hex << (int)(shift_data_from_vec(data, k, i)) << std::endl;
+        }
+
+        // if MSB was "1" then XOR the polynomial
+        if (flag_MSB_one){
+            crc_reg = (crc_reg ^ polynomial) & mask; 
         }
     }
 
     // Final XOR operation after all bits processed.
-    if (conf_outReflect) {
-        crc = reflect(crc, r);  // Reflect the CRC result if required.
-    }
+    if (conf_outReflect)
+        crc_reg = reflect(crc_reg, r); // Reflect the CRC result if required.
 
-    if (conf_outXor) {
-        crc ^= ((1ULL << r) - 1);  // Perform final XOR operation.
-    }
+    if (conf_outXor)
+        crc_reg ^= ((1ULL << r) - 1); // Perform final XOR operation.
 
-    crc = crc & mask; // mask the crc value to the r bits
+    crc_reg = crc_reg & mask; // mask the crc value to the r bits
 
-    return crc;  // Return the final CRC value.
+    std::cout<<"[INFO] CRC value: " << std::hex << crc_reg << std::endl;
+
+    return crc_reg; // Return the final CRC value.
 }
 
 /**
@@ -468,7 +596,7 @@ std::vector<std::vector<uint8_t>> CRC::SystematicGeneratorMatrix(uint32_t polyno
 
         // calculate the crc for the unit vector
         //crc = calculateCRC_unitVec(unit_vector, (uint64_t)polynomial, r, k);
-        crc = computeCRC(polynomial, r, unit_vector, false, true, false, true);
+        crc = computeCRC(polynomial, r, (uint16_t)k, unit_vector, false, false, false, false, 0ull, true);
 
         std::cout << "[" << std::hex << polynomial  << "]crc: " << std::hex << crc << std::endl;
 

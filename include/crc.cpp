@@ -277,16 +277,22 @@ uint64_t CRC::shift_data_from_vec(const std::vector<uint8_t>& data, int k, int s
 std::vector<uint8_t> CRC::unitVectorToDatVector(const std::vector<uint8_t>& unit_vector) {
     uint64_t temp = 0;
     std::vector<uint8_t> data_vector;
+    uint16_t offset = 0; 
     
     for (int i = unit_vector.size() - 1; i >= 0; --i) {
         //temp <<= 1;
-        temp |= unit_vector[i] << (unit_vector.size() - i - 1);
+        temp |= unit_vector[i] << offset;
+
+        offset++;
 
         if(i%8 == 0){
             data_vector.insert(data_vector.begin(), temp);
+            offset = 0; 
             //data_vector.push_back(static_cast<uint8_t>(temp));
             temp = 0ull;
         }
+
+        
     }
     
     
@@ -434,11 +440,12 @@ uint64_t CRC::computeCRC(   uint64_t polynomial,
 
         crc_reg |= (shift_data_from_vec(data, k, i) & 1ull);
 
+        /*
         std::cout << "[" << std::dec << (int)(i) << "] crc_reg: " << std::bitset<6>(crc_reg) << "\t";
         std::cout << "shift: " << std::hex << (int)(shift_data_from_vec(data, k, i))
                   << "\t" << std::bitset<64>(shift_data_from_vec(data, k, i))
                   << std::endl;
-        /*
+
         if (conf_inputIsBitVecotr){
             //std::cout << "[" << std::dec << (int)i << "] crc_reg: " << std::hex << crc_reg << "\t";
             std::cout << "[" << std::dec << (int)(i-1) << "] crc_reg: " << std::bitset<4>(crc_reg) << "\t";
@@ -447,9 +454,6 @@ uint64_t CRC::computeCRC(   uint64_t polynomial,
                       << std::endl;
         }
         */
-        
-        
-        
 
         // if MSB was "1" then XOR the polynomial
         if (flag_MSB_one){
@@ -646,12 +650,14 @@ std::vector<std::vector<uint8_t>> CRC::SystematicGeneratorMatrix(uint32_t polyno
         crc = computeCRC(polynomial, r, (uint16_t)k, unit_vector, false, false, false, false, 0ull, true);
 
         std::cout << "[INFO] [poly:0x" << std::hex << polynomial  << "]\tCRC value: " << std::hex << crc << "\tk: " << std::dec << k <<std::endl;
+        
 
         //set bit mask as parity vector
         for (auto j = 0; j < r; ++j){
             p.push_back((crc >> j) & 1);
             G[i][j + k] = (crc >> j) & 1;
         }
+        
 
     }
 

@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <iomanip>
 #include <cmath>
+#include <bitset>
 
 class CRC
 {
@@ -58,6 +59,8 @@ public:
 
     // Shifts data from a vector to a number.
     static uint64_t shift_data_from_vec(const std::vector<uint8_t>& data, int k, int shift);
+
+    static std::vector<uint8_t> unitVectorToDatVector(const std::vector<uint8_t>& unit_vector);
 
 private:
     // Helper function to reflect bits of a number.

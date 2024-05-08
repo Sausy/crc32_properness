@@ -155,6 +155,8 @@ int main()
     };
     assert(parity_check_matrix_crc4 == H_correct);
 
+    std::cout << "[PASSED] CRC4 Parity Check Matrix Test\n";
+
     /*
 
     // Testing Parity Check Matrix for CRC16
@@ -192,18 +194,32 @@ int main()
     printMatrix(H);
     */
 
+    uint64_t polynomial = 0b000111;
+    auto r = 6;
+    auto k = 16;
+    uint64_t crc_correct = 0ull;
+    uint64_t crc = 0ull;
     std::cout << "\n===================="
               << "\nStarting Parity Check Matrix Test"
               << "No Matrix to counter check but \n"
               << "the size of the matrix can be checked"
-              << "Generator Matrix r=6, k=16\n"
-              << "poly: 0x38 for CRC6\n"
+              << "Generator Matrix r=" << std::dec << r
+              << ", k=" << k << "\n"
+              << "poly: "
+              << std::hex << polynomial
+              << " for CRC6\n"
               << "\n====================" << std::endl;
     // H [n-k,n]
     // G [k,n]
-    auto H = CRC::generateParityCheckMatrix(0x38, 6, 16);
-    auto sysG = CRC::SystematicGeneratorMatrix(0x38, 6, 16);
-    auto G = CRC::generatorMatrix(0x38, 6, 16);
+
+    auto H = CRC::generateParityCheckMatrix(polynomial, r, k);
+    std::cout << "CRC6 H-Parity Check Matrix\n";
+    printMatrix(H);
+    return 0;
+
+    
+    auto sysG = CRC::SystematicGeneratorMatrix(polynomial, r, k);
+    auto G = CRC::generatorMatrix(polynomial, r, k);
     std::cout << "CRC6 G-Generator Matrix\n";
     printMatrix(G);
 
@@ -212,6 +228,49 @@ int main()
 
     std::cout << "CRC6 H-Parity Check Matrix\n";
     printMatrix(H);
+    
+    /*
+
+    std::vector<uint8_t> message = {
+        0x01,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x01
+    }; // Example data
+    std::cout << "===================="
+              << "\nStarting CRC Test"
+              << "\nr = " << std::dec << r
+              << "\nk = " << std::dec << k
+              << "\n===================="
+              << "\ninit: " << std::hex << 0xFF
+              << "\nReflex IN: " << std::dec << true
+              << "\nReflex OUT: " << std::dec << true
+              << "\nXOR OUT: " << std::hex << 0xFF
+              << "\nPolynomial: " << std::hex << polynomial
+              << std::endl;
+    // print message
+    std::cout << "Message: ";
+    printVector(message);
+    std::cout << "\n====================" << std::endl;
+
+    // set corret value
+    crc_correct = 0xF0;
+    crc = CRC::computeCRC(polynomial, r, k, message, false, false, true, true, ~0ull, true);
+    std::cout << "CRC Result: " << std::hex << crc << std::endl;
+    assert(crc == crc_correct); // Expected CRC value for the example data
+    */
 
     return 0;
 }

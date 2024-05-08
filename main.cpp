@@ -539,9 +539,9 @@ int main() {
     // Long Runners
 
     // CRC32 test
-    // t.push_back(test(new CRC(32, 64, 0xF1922815), "direct"));
-    // t.push_back(test(new CRC(32, 64, 0xF4ACFB13), "direct"));
-    // t.push_back(test(new CRC(32, 64, 0x04C11DB7), "direct"));
+    t.push_back(test(new CRC(32, 64, 0xF1922815), "direct"));
+    t.push_back(test(new CRC(32, 64, 0xF4ACFB13), "direct"));
+    t.push_back(test(new CRC(32, 64, 0x04C11DB7), "direct"));
 
     // CRC 32 parity check matrix test
     //t.push_back(test(new CRC(32, 64, 0xF1922815), "direct_parityMatrix"));

@@ -515,6 +515,7 @@ int main() {
     std::cout << "===================" << std::endl;
     std::cout << "Brootforce codeword weight" << std::endl;
 
+    /*
     // CRC8 test
     t.push_back(test(new CRC(8, 16, 0x31), "direct"));
     t.push_back(test(new CRC(8, 16, 0x31, 0U, true, true, false), "direct"));
@@ -542,6 +543,8 @@ int main() {
     t.push_back(test(new CRC(32, 64, 0xF1922815), "direct"));
     t.push_back(test(new CRC(32, 64, 0xF4ACFB13), "direct"));
     t.push_back(test(new CRC(32, 64, 0x04C11DB7), "direct"));
+    */
+    t.push_back(test(new CRC(32, 64, 0xF1922815), "direct_parityMatrix"));
 
     // CRC 32 parity check matrix test
     //t.push_back(test(new CRC(32, 64, 0xF1922815), "direct_parityMatrix"));

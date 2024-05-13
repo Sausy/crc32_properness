@@ -509,7 +509,10 @@ uint32_t test::hamming_distance(std::vector<uint8_t> &v1, std::vector<uint8_t> &
 
 int main() {
     std::vector<test> t;
-    // test *t = new test(new CRC(16, 32, 0x8005), "direct");
+    // TODO:
+    // 1. Make time prediction better -> sine a single run of direct_parityMatrix is not as long as the next one 
+    // 2. Add more CRC types
+    // 3. Add more methods
 
 
     std::cout << "===================" << std::endl;
@@ -536,18 +539,26 @@ int main() {
     t.push_back(test(new CRC(16, 32, 0x8005, 0U, true, true, true), "direct_parityMatrix"));      // CRC16-MAXIM
     t.push_back(test(new CRC(16, 32, 0x1021, 0x89EC, true, true, false), "direct_parityMatrix")); // CRC16-TMS37157
 
-    // ======================= 
+    // =======================
     // Long Runners
 
     // CRC32 test
     t.push_back(test(new CRC(32, 64, 0xF1922815), "direct"));
     t.push_back(test(new CRC(32, 64, 0xF4ACFB13), "direct"));
     t.push_back(test(new CRC(32, 64, 0x04C11DB7), "direct"));
-    */
-    t.push_back(test(new CRC(32, 64, 0xF1922815), "direct_parityMatrix"));
 
-    // CRC 32 parity check matrix test
-    //t.push_back(test(new CRC(32, 64, 0xF1922815), "direct_parityMatrix"));
+    // direct_parityMatrix
+    t.push_back(test(new CRC(32, 64, 0xF1922815), "direct_parityMatrix"));
+    t.push_back(test(new CRC(32, 64, 0xF4ACFB13), "direct_parityMatrix"));
+    t.push_back(test(new CRC(32, 64, 0x04C11DB7), "direct_parityMatrix"));
+
+    // 128 bit data length
+    t.push_back(test(new CRC(32, 128, 0xF1922815), "direct_parityMatrix"));
+    */
+
+    // custom length
+    t.push_back(test(new CRC(32, 48, 0xF1922815), "direct_parityMatrix"));
+
 
     // start running tests
     std::cout << "\nAmount of tests: "<< t.size() << std::endl;

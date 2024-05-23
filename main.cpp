@@ -80,10 +80,21 @@ test::test(CRC *c, std::string comment, std::string data_path)
     // returns decimal value of hex
     sprintf(hexString, "%x", polynomial);
 
+    // set polynomial
     this->test_file += "0x" + std::string(hexString) + "_";
 
+    // set initial value
     sprintf(hexString, "%x", c->initial);
     this->test_file += "0x" + std::string(hexString) + "_";
+
+    // set input reflected
+    this->test_file += c->reflected ? "1_" : "0_";
+
+    // set result reflected
+    this->test_file += c->resultReflected ? "1_" : "0_";
+
+    // set final XOR
+    this->test_file += c->finalXOR ? "1_" : "0_";
 
     // if comment is part of select_brootforce_method
     if (method_dict.find(comment) != method_dict.end()){
@@ -557,8 +568,25 @@ int main() {
     */
 
     // custom length
-    t.push_back(test(new CRC(32, 48, 0xF1922815), "direct_parityMatrix"));
+    //t.push_back(test(new CRC(32, 48, 0xF1922815), "direct_parityMatrix"));
 
+    t.push_back(test(new CRC(32, 64, 0xF1922815, 0x00000000, false, false, false), "direct"));
+    t.push_back(test(new CRC(32, 64, 0xF1922815, 0x00000000, false, false, true), "direct"));
+    t.push_back(test(new CRC(32, 64, 0xF1922815, 0x00000000, false, true, false), "direct"));
+    t.push_back(test(new CRC(32, 64, 0xF1922815, 0x00000000, false, true, true), "direct"));
+    t.push_back(test(new CRC(32, 64, 0xF1922815, 0x00000000, true, false, false), "direct"));
+    t.push_back(test(new CRC(32, 64, 0xF1922815, 0x00000000, true, false, true), "direct"));
+    t.push_back(test(new CRC(32, 64, 0xF1922815, 0x00000000, true, true, false), "direct"));
+    t.push_back(test(new CRC(32, 64, 0xF1922815, 0x00000000, true, true, true), "direct"));
+
+    t.push_back(test(new CRC(32, 64, 0xF1922815, 0xFFFFFFFF, false, false, false), "direct"));
+    t.push_back(test(new CRC(32, 64, 0xF1922815, 0xFFFFFFFF, false, false, true), "direct"));
+    t.push_back(test(new CRC(32, 64, 0xF1922815, 0xFFFFFFFF, false, true, false), "direct"));
+    t.push_back(test(new CRC(32, 64, 0xF1922815, 0xFFFFFFFF, false, true, true), "direct"));
+    t.push_back(test(new CRC(32, 64, 0xF1922815, 0xFFFFFFFF, true, false, false), "direct"));
+    t.push_back(test(new CRC(32, 64, 0xF1922815, 0xFFFFFFFF, true, false, true), "direct"));
+    t.push_back(test(new CRC(32, 64, 0xF1922815, 0xFFFFFFFF, true, true, false), "direct"));
+    t.push_back(test(new CRC(32, 64, 0xF1922815, 0xFFFFFFFF, true, true, true), "direct"));
 
     // start running tests
     std::cout << "\nAmount of tests: "<< t.size() << std::endl;

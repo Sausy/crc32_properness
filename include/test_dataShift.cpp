@@ -52,5 +52,17 @@ int main()
         std::cout << "Example " << k << " Result: 0x" << std::hex << result2 << std::endl;
     }
 
+    // Example 3
+    std::vector<uint8_t> data2 = {0x00, 0x00, 0x01};
+    int k2 = 3;
+    int shift2 = k2;
+    uint64_t result2 = foo(data2, k2, shift2);
+    std::cout << "Example 2 Result: 0x" << std::hex << result2 << std::endl;
+
+    for (auto k = 0; k < 16; ++k){
+        result2 = foo(data2, k2, k);
+        std::cout << "Example " << k << " Result: 0x" << std::hex << result2 << std::endl;
+    }
+
     return 0;
 }

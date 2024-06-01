@@ -52,10 +52,10 @@ public:
 
     // Generates the generator matrix for CRC codes.
     static std::vector<std::vector<uint8_t>> generatorMatrix(uint32_t polynomial, int r, int k);
-    static std::vector<std::vector<uint8_t>> SystematicGeneratorMatrix(uint32_t polynomial, int r, int k);
+    std::vector<std::vector<uint8_t>> SystematicGeneratorMatrix(uint32_t polynomial, int r, int k);
 
     // Generates the parity check matrix for CRC codes.
-    static std::vector<std::vector<uint8_t>> generateParityCheckMatrix(uint32_t polynomial, int r, int k);
+    std::vector<std::vector<uint8_t>> generateParityCheckMatrix(uint32_t polynomial, int r, int k);
 
     // Shifts data from a vector to a number.
     static uint64_t shift_data_from_vec(const std::vector<uint8_t>& data, int k, int shift);

@@ -12,11 +12,10 @@ int main()
     uint64_t polynomial = 0b100011101;
 
     std::vector<uint8_t> message = {0xC2}; // Example data
-    std::cout << "===================="
+    std::cout << "\n===================="
               << "\nStarting CRC Test"
               << "\nr = " << std::dec << r
               << "\nk = " << std::dec << k
-              << "\n===================="
               << "\ninit: " << std::hex << 0x00
               << "\nReflex IN: " << std::dec << false
               << "\nReflex OUT: " << std::dec << false
@@ -26,18 +25,17 @@ int main()
     // print message 
     std::cout << "Message: ";
     printVector(message);
-    std::cout << "\n====================" << std::endl;
+    std::cout << "====================" << std::endl;
 
     crc_correct = 0x0F;
     crc = CRC::computeCRC(polynomial, r, k, message, false, false, false, false, 0ull, false);
     std::cout << "CRC Result: " << std::hex << crc << std::endl;
     assert(crc == crc_correct); // Expected CRC value for the example data
 
-    std::cout << "===================="
+    std::cout << "\n===================="
               << "\nStarting CRC Test"
               << "\nr = " << std::dec << r
               << "\nk = " << std::dec << k
-              << "\n===================="
               << "\ninit: " << std::hex << 0x00
               << "\nReflex IN: " << std::dec << false
               << "\nReflex OUT: " << std::dec << false
@@ -47,7 +45,7 @@ int main()
     // print message
     std::cout << "Message: ";
     printVector(message);
-    std::cout << "\n====================" << std::endl;
+    std::cout << "====================" << std::endl;
 
     //set corret value 
     crc_correct = 0xF0;
@@ -55,11 +53,10 @@ int main()
     std::cout << "CRC Result: " << std::hex << crc << std::endl;
     assert(crc == crc_correct); // Expected CRC value for the example data
 
-    std::cout << "===================="
+    std::cout << "\n===================="
               << "\nStarting CRC Test"
               << "\nr = " << std::dec << r
-              << "\nk = " << std::dec << k
-              << "\n===================="
+              << "\nk = " << std::dec << k              
               << "\ninit: " << std::hex << 0x00
               << "\nReflex IN: " << std::dec << true
               << "\nReflex OUT: " << std::dec << false
@@ -69,7 +66,7 @@ int main()
     // print message
     std::cout << "Message: ";
     printVector(message);
-    std::cout << "\n====================" << std::endl;
+    std::cout << "====================" << std::endl;
 
     // set corret value
     crc_correct = 0xCB;
@@ -79,11 +76,10 @@ int main()
 
 
 
-    std::cout << "===================="
+    std::cout << "\n===================="
               << "\nStarting CRC Test"
               << "\nr = " << std::dec << r
-              << "\nk = " << std::dec << k
-              << "\n===================="
+              << "\nk = " << std::dec << k              
               << "\ninit: " << std::hex << 0x00
               << "\nReflex IN: " << std::dec << true
               << "\nReflex OUT: " << std::dec << true
@@ -93,7 +89,7 @@ int main()
     // print message
     std::cout << "Message: ";
     printVector(message);
-    std::cout << "\n====================" << std::endl;
+    std::cout << "====================" << std::endl;
 
     // set corret value
     crc_correct = 0xD3;
@@ -103,11 +99,10 @@ int main()
 
 
 
-    std::cout << "===================="
+    std::cout << "\n===================="
               << "\nStarting CRC Test"
               << "\nr = " << std::dec << r
-              << "\nk = " << std::dec << k
-              << "\n===================="
+              << "\nk = " << std::dec << k              
               << "\ninit: " << std::hex << 0xFF
               << "\nReflex IN: " << std::dec << true
               << "\nReflex OUT: " << std::dec << true
@@ -117,7 +112,7 @@ int main()
     // print message
     std::cout << "Message: ";
     printVector(message);
-    std::cout << "\n====================" << std::endl;
+    std::cout << "====================" << std::endl;
 
     // set corret value
     crc_correct = 0xF0;
@@ -134,17 +129,16 @@ int main()
     k = 8;
     polynomial = 0xB;
     message = {0x01}; // Example data
-    std::cout << "===================="
+    std::cout << "\n===================="
               << "\nStarting CRC Test"
               << "\nr = " << std::dec << r
-              << "\nk = " << std::dec << k
-              << "\n===================="
+              << "\nk = " << std::dec << k              
               << "\nPolynomial: " << std::hex << polynomial
               << std::endl;
     // print message
     std::cout << "Message: ";
     printVector(message);
-    std::cout << "\n====================" << std::endl;
+    std::cout << "====================" << std::endl;
 
     //set corret value 
     crc_correct = 0x03; 

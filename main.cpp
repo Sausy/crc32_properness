@@ -138,11 +138,13 @@ void test::weight_distribution_directParityMatrix(){
     std::cout << "\n[INFO] Calculating weight distribution...direct VIA Parity Matrix" << std::endl;
 
     // the code is currently limited to data that is a multiple of 8
+    /*
     if (this->c->kBits % 8 != 0){
         // throw error
         throw std::invalid_argument("kBits is not a multiple of 8");
         return;
     }
+    */
 
     std::cout << "Parity check Matrix for CRC" << this->c->type << std::endl;
     printMatrix(this->c->H);
@@ -160,6 +162,8 @@ void test::weight_distribution_directParityMatrix(){
     // size must be [n-k, n]
     assert(rows == (uint32_t)(this->c->nBits - this->c->kBits));
     assert(cols == (uint32_t)this->c->nBits);
+
+    std::cout << "Cols = " << cols << " Rows = " << rows << std::endl;
 
     // number of subsets
     uint64_t subsets = (uint64_t)pow((long double)2, (long double)rows);
@@ -208,6 +212,9 @@ void test::weight_distribution_directParityMatrix(){
                 //printVector(v);
             }
         }
+        
+        //printout Vector
+        printVector(v);
 
         // calculate the weight of the codeword
         weight = this->hamming_weight(v);
@@ -247,6 +254,11 @@ void test::weight_distribution_directParityMatrix(){
     auto t_end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t0);
     std::cout << "[INFO] Done! " << std::dec << duration.count() << " milliseconds" << std::endl;
+
+    // print the weight distribution
+    for (uint32_t i = 0; i < weight_distribution.size(); i++){
+        std::cout << "Weight " << std::dec << i << ": " << std::dec << weight_distribution[i] << std::endl;
+    }
 
     // store the data in a file
     this->store_data(weight_distribution);
@@ -360,6 +372,7 @@ void test::weight_distribution_direct()
     auto t_end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t0);
     std::cout << "[INFO] Done! " << std::dec << duration.count() << " milliseconds" << std::endl;
+    
 
     // store the data in a file
     this->store_data(weight_distribution);
@@ -530,6 +543,14 @@ int main() {
     std::cout << "Brootforce codeword weight" << std::endl;
 
     /*
+    t.push_back(test(new CRC(3, 7, 0xB, 0U, false, false, false), "direct_parityMatrix"));
+    t.push_back(test(new CRC(3, 7, 0xB, 0U, false, true, false), "direct_parityMatrix"));
+    t.push_back(test(new CRC(3, 7, 0xB, 0U, true, false, false), "direct_parityMatrix"));
+    t.push_back(test(new CRC(3, 7, 0xB, 0U, true, true, false), "direct_parityMatrix"));
+    */
+    //t.push_back(test(new CRC(8, 16, 0x31, 0U, true, true, false), "direct_parityMatrix"));
+
+    /*
     // CRC8 test
     t.push_back(test(new CRC(8, 16, 0x31), "direct"));
     t.push_back(test(new CRC(8, 16, 0x31, 0U, true, true, false), "direct"));
@@ -570,6 +591,8 @@ int main() {
     // custom length
     //t.push_back(test(new CRC(32, 48, 0xF1922815), "direct_parityMatrix"));
 
+    /*
+
     t.push_back(test(new CRC(32, 64, 0xF1922815, 0x00000000, false, false, false), "direct"));
     t.push_back(test(new CRC(32, 64, 0xF1922815, 0x00000000, false, false, true), "direct"));
     t.push_back(test(new CRC(32, 64, 0xF1922815, 0x00000000, false, true, false), "direct"));
@@ -587,6 +610,16 @@ int main() {
     t.push_back(test(new CRC(32, 64, 0xF1922815, 0xFFFFFFFF, true, false, true), "direct"));
     t.push_back(test(new CRC(32, 64, 0xF1922815, 0xFFFFFFFF, true, true, false), "direct"));
     t.push_back(test(new CRC(32, 64, 0xF1922815, 0xFFFFFFFF, true, true, true), "direct"));
+    */
+
+    t.push_back(test(new CRC(32, 64, 0xF1922815, 0U, false, false, false), "direct_parityMatrix"));
+    t.push_back(test(new CRC(32, 64, 0xF1922815, 0U, false, false, true), "direct_parityMatrix"));
+    t.push_back(test(new CRC(32, 64, 0xF1922815, 0U, false, true, false), "direct_parityMatrix"));
+    t.push_back(test(new CRC(32, 64, 0xF1922815, 0U, false, true, true), "direct_parityMatrix"));
+    t.push_back(test(new CRC(32, 64, 0xF1922815, 0U, true, false, false), "direct_parityMatrix"));
+    t.push_back(test(new CRC(32, 64, 0xF1922815, 0U, true, false, true), "direct_parityMatrix"));
+    t.push_back(test(new CRC(32, 64, 0xF1922815, 0U, true, true, false), "direct_parityMatrix"));
+    t.push_back(test(new CRC(32, 64, 0xF1922815, 0U, true, true, true), "direct_parityMatrix"));
 
     // start running tests
     std::cout << "\nAmount of tests: "<< t.size() << std::endl;

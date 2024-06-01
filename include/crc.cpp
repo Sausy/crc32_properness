@@ -32,8 +32,8 @@ CRC::CRC(int type, int n, uint32_t polynomial, uint32_t initial, bool reflected,
     this->resultReflected = resultReflected;
     this->finalXOR = finalXOR;
 
-    if (type != 8 && type != 16 && type != 32)
-        throw std::invalid_argument("Invalid CRC type specified. Allowed values are 8, 16, or 32.");
+    //if (type != 8 && type != 16 && type != 32)
+    //    throw std::invalid_argument("Invalid CRC type specified. Allowed values are 8, 16, or 32.");
     
     this->rBits = type;
     this->nBits = n;
@@ -44,9 +44,10 @@ CRC::CRC(int type, int n, uint32_t polynomial, uint32_t initial, bool reflected,
     
     // generate a LUT that is not reflected
     this->LUT = createLUT(polynomial, type, false);
+
     this->G = generatorMatrix(polynomial, this->rBits, this->kBits);
-    this->systematicG = SystematicGeneratorMatrix(polynomial, this->rBits, this->kBits);
-    this->H = generateParityCheckMatrix(polynomial, this->rBits, this->kBits); 
+    this->systematicG = this->SystematicGeneratorMatrix(polynomial, this->rBits, this->kBits);
+    this->H = this->generateParityCheckMatrix(polynomial, this->rBits, this->kBits);
 }
 
 /**
@@ -603,6 +604,9 @@ G = 	0	1	0	0   1	0	1	  = [ I_k | -A^T  ]
  */
 std::vector<std::vector<uint8_t>> CRC::SystematicGeneratorMatrix(uint32_t polynomial, int r, int k)
 {
+    // n codeword (aka.: telegram) length
+    // k dataword length
+    // r crc length
     std::cout << "[INFO] Generating systematic generator matrix" << std::endl;
     std::cout << "[INFO] k: " << std::dec << k << std::endl;
     std::cout << "[INFO] r: " << std::dec << r << std::endl;
@@ -647,7 +651,7 @@ std::vector<std::vector<uint8_t>> CRC::SystematicGeneratorMatrix(uint32_t polyno
 
         // calculate the crc for the unit vector
         //crc = calculateCRC_unitVec(unit_vector, (uint64_t)polynomial, r, k);
-        crc = computeCRC(polynomial, r, (uint16_t)k, unit_vector, false, false, false, false, 0ull, true);
+        crc = computeCRC(polynomial, r, (uint16_t)k, unit_vector, false, this->reflected, this->resultReflected, this->finalXOR, 0ull, true);
 
         std::cout << "[INFO] [poly:0x" << std::hex << polynomial  << "]\tCRC value: " << std::hex << crc << "\tk: " << std::dec << k <<std::endl;
         
@@ -806,7 +810,7 @@ std::vector<std::vector<uint8_t>> CRC::generateParityCheckMatrix(uint32_t polyno
     std::vector<std::vector<uint8_t>> H(r, std::vector<uint8_t>(n, 0));
 
     // Generate the systematic generator matrix G
-    auto G = SystematicGeneratorMatrix(polynomial, r, k);
+    auto G = this->SystematicGeneratorMatrix(polynomial, r, k);
 
     // Load Identiy Matrix to H
     // amount of rows is r=n-k

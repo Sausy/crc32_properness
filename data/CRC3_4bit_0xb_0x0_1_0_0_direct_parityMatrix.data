@@ -1,0 +1,22 @@
+{
+	"CRC": 3,
+	"Polynomial": "0xb",
+	"Initial": "0x0",
+	"InputReflected": true,
+	"ResultReflected": false,
+	"FinalXOR": false,
+	"Method": "direct_parityMatrix",
+	"kBits": 1,
+	"rBits": 3,
+	"nBits": 4,
+	"Data": [
+		1,
+		1,
+		3,
+		3,
+		0
+	],
+	"Unix_Timestamp": 1717255367,
+	"Timestamp": "2024-06-01 17:22:47",
+	"Editor": "Sausy"
+}

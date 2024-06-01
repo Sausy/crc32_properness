@@ -52,6 +52,7 @@ int main()
         std::cout << "Example " << k << " Result: 0x" << std::hex << result2 << std::endl;
     }
 
+    /*
     // Example 3
     std::vector<uint8_t> data2 = {0x00, 0x00, 0x01};
     int k2 = 3;
@@ -63,6 +64,7 @@ int main()
         result2 = foo(data2, k2, k);
         std::cout << "Example " << k << " Result: 0x" << std::hex << result2 << std::endl;
     }
+    */
 
     return 0;
 }

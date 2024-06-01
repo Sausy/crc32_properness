@@ -214,7 +214,7 @@ void test::weight_distribution_directParityMatrix(){
         }
         
         //printout Vector
-        printVector(v);
+        //printVector(v);
 
         // calculate the weight of the codeword
         weight = this->hamming_weight(v);
@@ -548,6 +548,28 @@ int main() {
     t.push_back(test(new CRC(3, 7, 0xB, 0U, true, false, false), "direct_parityMatrix"));
     t.push_back(test(new CRC(3, 7, 0xB, 0U, true, true, false), "direct_parityMatrix"));
     */
+    t.push_back(test(new CRC(8, 16, 0x31, 0U, false, false, true), "direct"));
+    t.push_back(test(new CRC(8, 16, 0x31, 0U, false, true, false), "direct"));
+    t.push_back(test(new CRC(8, 16, 0x31, 0U, false, true, true), "direct"));
+    t.push_back(test(new CRC(8, 16, 0x31, 0U, true, false, false), "direct"));
+    t.push_back(test(new CRC(8, 16, 0x31, 0U, true, false, true), "direct"));
+    t.push_back(test(new CRC(8, 16, 0x31, 0U, true, true, false), "direct"));
+    t.push_back(test(new CRC(8, 16, 0x31, 0U, true, true, true), "direct"));
+    t.push_back(test(new CRC(8, 16, 0x31, 0xFF, false, false, true), "direct"));
+    t.push_back(test(new CRC(8, 16, 0x31, 0xFF, false, true, false), "direct"));
+    t.push_back(test(new CRC(8, 16, 0x31, 0xFF, false, true, true), "direct"));
+    t.push_back(test(new CRC(8, 16, 0x31, 0xFF, true, false, false), "direct"));
+    t.push_back(test(new CRC(8, 16, 0x31, 0xFF, true, false, true), "direct"));
+    t.push_back(test(new CRC(8, 16, 0x31, 0xFF, true, true, false), "direct"));
+    t.push_back(test(new CRC(8, 16, 0x31, 0xFF, true, true, true), "direct"));
+
+    t.push_back(test(new CRC(8, 16, 0x31, 0U, false, false, true), "direct_parityMatrix"));
+    t.push_back(test(new CRC(8, 16, 0x31, 0U, false, true, false), "direct_parityMatrix"));
+    t.push_back(test(new CRC(8, 16, 0x31, 0U, false, true, true), "direct_parityMatrix"));
+    t.push_back(test(new CRC(8, 16, 0x31, 0U, true, false, false), "direct_parityMatrix"));
+    t.push_back(test(new CRC(8, 16, 0x31, 0U, true, false, true), "direct_parityMatrix"));
+    t.push_back(test(new CRC(8, 16, 0x31, 0U, true, true, false), "direct_parityMatrix"));
+    t.push_back(test(new CRC(8, 16, 0x31, 0U, true, true, true), "direct_parityMatrix"));
     //t.push_back(test(new CRC(8, 16, 0x31, 0U, true, true, false), "direct_parityMatrix"));
 
     /*
@@ -612,6 +634,7 @@ int main() {
     t.push_back(test(new CRC(32, 64, 0xF1922815, 0xFFFFFFFF, true, true, true), "direct"));
     */
 
+        /*
     t.push_back(test(new CRC(32, 64, 0xF1922815, 0U, false, false, false), "direct_parityMatrix"));
     t.push_back(test(new CRC(32, 64, 0xF1922815, 0U, false, false, true), "direct_parityMatrix"));
     t.push_back(test(new CRC(32, 64, 0xF1922815, 0U, false, true, false), "direct_parityMatrix"));
@@ -620,6 +643,7 @@ int main() {
     t.push_back(test(new CRC(32, 64, 0xF1922815, 0U, true, false, true), "direct_parityMatrix"));
     t.push_back(test(new CRC(32, 64, 0xF1922815, 0U, true, true, false), "direct_parityMatrix"));
     t.push_back(test(new CRC(32, 64, 0xF1922815, 0U, true, true, true), "direct_parityMatrix"));
+    */
 
     // start running tests
     std::cout << "\nAmount of tests: "<< t.size() << std::endl;

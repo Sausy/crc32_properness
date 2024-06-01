@@ -396,8 +396,8 @@ uint64_t CRC::computeCRC(   uint64_t polynomial,
     }
 
     // print out data 
-    std::cout << "[INFO] Data: ";
-    printVector(data);
+    //std::cout << "[INFO] Data: ";
+    //printVector(data);
 
 
     // Process each byte in the message.
@@ -666,6 +666,7 @@ std::vector<std::vector<uint8_t>> CRC::SystematicGeneratorMatrix(uint32_t polyno
     }
 
     // print the generator matrix
+    
     std::cout << "Generator Matrix: " << std::endl;
     for (auto row : G) {
         for (auto col : row) {
@@ -673,6 +674,7 @@ std::vector<std::vector<uint8_t>> CRC::SystematicGeneratorMatrix(uint32_t polyno
         }
         std::cout << std::endl;
     }
+    
     
 
     /*

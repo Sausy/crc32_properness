@@ -2,7 +2,7 @@
 	"CRC": 8,
 	"Polynomial": "0x31",
 	"Initial": "0x0",
-	"InputReflected": true,
+	"InputReflected": false,
 	"ResultReflected": true,
 	"FinalXOR": false,
 	"Method": "direct_parityMatrix",
